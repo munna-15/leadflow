@@ -139,7 +139,7 @@ export default function ProblemSection() {
 
               <ArrowRight className="h-4 w-4 text-primary" />
 
-              <span className="rounded-full bg-primary/15 px-3.5 py-2 text-primary-200">
+              <span className="rounded-full bg-primary/15 px-3.5 py-2 text-white">
                 LeadFlow
               </span>
 

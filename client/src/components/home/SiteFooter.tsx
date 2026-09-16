@@ -4,48 +4,59 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   BrainCircuit,
-  BarChart3,
+  CircleDollarSign,
   ClipboardList,
   LayoutDashboard,
+  PlayCircle,
+  Sparkles,
   Users,
 } from "lucide-react";
 
 const productLinks = [
   {
-    label: "Leads",
-    href: "#product",
-    icon: Users,
-  },
-  {
-    label: "AI Qualification",
-    href: "#ai",
-    icon: BrainCircuit,
-  },
-  {
-    label: "Pipeline",
-    href: "#product",
+    label: "Product",
+    href: "/product",
     icon: LayoutDashboard,
   },
   {
+    label: "Lead management",
+    href: "/product",
+    icon: Users,
+  },
+  {
+    label: "AI qualification",
+    href: "/ai",
+    icon: BrainCircuit,
+  },
+  {
     label: "Follow-ups",
-    href: "#follow-ups",
+    href: "/how-it-works",
     icon: ClipboardList,
   },
   {
-    label: "Analytics",
-    href: "#analytics",
-    icon: BarChart3,
+    label: "Demo",
+    href: "/demo",
+    icon: PlayCircle,
   },
 ];
 
-const companyLinks = [
+const exploreLinks = [
+  {
+    label: "Solutions",
+    href: "/solutions",
+  },
   {
     label: "How it works",
-    href: "#how-it-works",
+    href: "/how-it-works",
+  },
+  {
+    label: "Pricing",
+    href: "/pricing",
+    icon: CircleDollarSign,
   },
   {
     label: "Contact",
-    href: "mailto:hello@leadflow.app",
+    href: "/get-started",
   },
 ];
 
@@ -53,10 +64,18 @@ export default function SiteFooter() {
   return (
     <footer className="border-t border-border bg-[#111827] text-white">
       <div className="mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12">
-        <div className="grid gap-12 py-16 sm:py-20 lg:grid-cols-[1.3fr_1fr_0.8fr] lg:gap-20">
+        <div className="grid gap-12 py-16 sm:py-20 lg:grid-cols-[1.4fr_1fr_1fr] lg:gap-20">
+          {/* ---------------------------------------------------------------- */}
+          {/* BRAND                                                            */}
+          {/* ---------------------------------------------------------------- */}
+
           <div className="max-w-md">
-            <Link href="/" className="inline-flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2.5"
+              aria-label="LeadFlow home"
+            >
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-sm">
                 L
               </span>
 
@@ -67,22 +86,31 @@ export default function SiteFooter() {
 
             <p className="mt-5 text-sm leading-7 text-slate-400 sm:text-base">
               AI-powered lead management and follow-up for businesses that want
-              every opportunity to stay visible and actionable.
+              every opportunity to stay visible, actionable, and moving forward.
             </p>
 
             <Link
-              href="/auth/register"
+              href="/get-started"
               className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-sky-300"
             >
-              Start managing leads
+              Get LeadFlow
               <ArrowUpRight className="h-4 w-4" />
             </Link>
+
+            <div className="mt-8 flex items-center gap-2 text-xs font-medium text-slate-500">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Built around the next action
+            </div>
           </div>
+
+          {/* ---------------------------------------------------------------- */}
+          {/* PRODUCT                                                          */}
+          {/* ---------------------------------------------------------------- */}
 
           <div>
             <p className="text-sm font-semibold text-white">Product</p>
 
-            <div className="mt-5 space-y-3">
+            <div className="mt-5 space-y-3.5">
               {productLinks.map((item) => {
                 const Icon = item.icon;
 
@@ -93,6 +121,7 @@ export default function SiteFooter() {
                     className="group flex items-center gap-2.5 text-sm text-slate-400 transition-colors hover:text-white"
                   >
                     <Icon className="h-3.5 w-3.5 text-slate-500 transition-colors group-hover:text-primary" />
+
                     {item.label}
                   </Link>
                 );
@@ -100,16 +129,24 @@ export default function SiteFooter() {
             </div>
           </div>
 
+          {/* ---------------------------------------------------------------- */}
+          {/* EXPLORE                                                          */}
+          {/* ---------------------------------------------------------------- */}
+
           <div>
             <p className="text-sm font-semibold text-white">Explore</p>
 
-            <div className="mt-5 space-y-3">
-              {companyLinks.map((item) => (
+            <div className="mt-5 space-y-3.5">
+              {exploreLinks.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className="block text-sm text-slate-400 transition-colors hover:text-white"
+                  className="flex items-center gap-2 text-sm text-slate-400 transition-colors hover:text-white"
                 >
+                  {item.icon && (
+                    <item.icon className="h-3.5 w-3.5 text-slate-500 transition-colors group-hover:text-primary" />
+                  )}
+
                   {item.label}
                 </Link>
               ))}
@@ -122,7 +159,7 @@ export default function SiteFooter() {
               </Link>
 
               <Link
-                href="/auth/register"
+                href="/get-started"
                 className="block text-sm text-slate-400 transition-colors hover:text-white"
               >
                 Get started
@@ -130,6 +167,10 @@ export default function SiteFooter() {
             </div>
           </div>
         </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* BOTTOM BAR                                                         */}
+        {/* ------------------------------------------------------------------ */}
 
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500 sm:text-sm">
