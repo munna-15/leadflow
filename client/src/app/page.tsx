@@ -1,9 +1,17 @@
 import Link from "next/link";
 
+import ProblemSection from "@/components/home/ProblemSection";
+import HowItWorksSection from "@/components/home/HowItWorksSection";
+import AIQualificationSection from "@/components/home/AIQualificationSection";
+import LeadIntelligenceSection from "@/components/home/LeadIntelligenceSection";
+import SalesWorkflowSection from "@/components/home/SalesWorkflowSection";
+import FollowUpIntelligenceSection from "@/components/home/FollowUpIntelligenceSection";
+import SiteFooter from "@/components/home/SiteFooter";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-background">
-      <nav className="border-b border-border/70 bg-white/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-border/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-18 w-full max-w-7xl items-center justify-between px-6 sm:px-8 lg:px-12">
           <Link href="/" className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-sm">
@@ -98,6 +106,15 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <ProblemSection />
+      <HowItWorksSection />
+      <AIQualificationSection />
+      <LeadIntelligenceSection />
+      <SalesWorkflowSection />
+      <FollowUpIntelligenceSection />
+
+      <SiteFooter />
     </main>
   );
 }

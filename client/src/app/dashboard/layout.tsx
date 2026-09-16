@@ -9,7 +9,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
       <div className="lg:pl-64">
         <DashboardHeader />
-
         <main>{children}</main>
       </div>
     </div>
