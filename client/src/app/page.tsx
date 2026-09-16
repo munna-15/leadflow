@@ -71,7 +71,7 @@ export default function Home() {
 
           <h1 className="max-w-3xl text-5xl font-semibold leading-[1.05] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             Turn every lead into a{" "}
-            <span className="bg-gradient-to-r from-[#111827] via-[#334155] to-[#0EA5E9] bg-clip-text text-transparent">
+            <span className="bg-linear-to-r from-[#111827] via-[#334155] to-[#0EA5E9] bg-clip-text text-transparent">
               meaningful opportunity.
             </span>
           </h1>
