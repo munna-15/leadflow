@@ -1,130 +1,44 @@
 "use client";
 
-import { ArrowDown, ArrowRight, CheckCircle2, CircleDot } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  CheckCircle2,
+  CircleDot,
+  Trophy,
+  XCircle,
+} from "lucide-react";
+
+import type {
+  PipelineOutcome,
+  PipelineStage,
+} from "@/services/pipeline.service";
 
 import PipelineLeadCard from "./PipelineLeadCard";
 
-const stages = [
-  {
-    id: "new",
-    label: "New",
-    description: "Fresh opportunities",
-    count: 12,
-    leads: [
-      {
-        id: "tanvir-hossain",
-        name: "Tanvir Hossain",
-        detail: "2 bedroom apartment · Mirpur",
-        score: 71,
-        temperature: "Warm" as const,
-      },
-      {
-        id: "sadia-karim",
-        name: "Sadia Karim",
-        detail: "Office space · Banani",
-        score: 64,
-        temperature: "Warm" as const,
-      },
-    ],
-  },
-  {
-    id: "qualified",
-    label: "Qualified",
-    description: "Ready for contact",
-    count: 8,
-    leads: [
-      {
-        id: "1",
-        name: "Rahim Ahmed",
-        detail: "3 bedroom apartment · Bashundhara",
-        score: 92,
-        temperature: "Hot" as const,
-      },
-      {
-        id: "nadia-rahman",
-        name: "Nadia Rahman",
-        detail: "Family apartment · Uttara",
-        score: 78,
-        temperature: "Warm" as const,
-      },
-    ],
-  },
-  {
-    id: "contacted",
-    label: "Contacted",
-    description: "Active conversations",
-    count: 6,
-    leads: [
-      {
-        id: "karim-hasan",
-        name: "Karim Hasan",
-        detail: "Apartment inquiry · Gulshan",
-        score: 84,
-        temperature: "Hot" as const,
-      },
-      {
-        id: "imran-chowdhury",
-        name: "Imran Chowdhury",
-        detail: "Commercial property · Motijheel",
-        score: 69,
-        temperature: "Warm" as const,
-      },
-    ],
-  },
-  {
-    id: "meeting",
-    label: "Meeting",
-    description: "Appointments in progress",
-    count: 4,
-    leads: [
-      {
-        id: "farhan-ahmed",
-        name: "Farhan Ahmed",
-        detail: "Apartment viewing · Dhanmondi",
-        score: 88,
-        temperature: "Hot" as const,
-      },
-      {
-        id: "maya-islam",
-        name: "Maya Islam",
-        detail: "Family home · Uttara",
-        score: 76,
-        temperature: "Warm" as const,
-      },
-    ],
-  },
-  {
-    id: "negotiation",
-    label: "Negotiation",
-    description: "Decision stage",
-    count: 2,
-    leads: [
-      {
-        id: "arif-rahman",
-        name: "Arif Rahman",
-        detail: "Premium apartment · Gulshan",
-        score: 95,
-        temperature: "Hot" as const,
-      },
-      {
-        id: "nusrat-jahan",
-        name: "Nusrat Jahan",
-        detail: "Commercial unit · Banani",
-        score: 82,
-        temperature: "Hot" as const,
-      },
-    ],
-  },
-];
+type PipelineFlowProps = {
+  stages: PipelineStage[];
+  outcomes: PipelineOutcome[];
+};
 
-export default function PipelineFlow() {
-  const totalOpportunities = stages.reduce(
+export default function PipelineFlow({ stages, outcomes }: PipelineFlowProps) {
+  const totalActiveOpportunities = stages.reduce(
     (total, stage) => total + stage.count,
     0,
   );
 
+  const wonCount =
+    outcomes.find((outcome) => outcome.key === "won")?.count ?? 0;
+
+  const lostCount =
+    outcomes.find((outcome) => outcome.key === "lost")?.count ?? 0;
+
   return (
     <section className="mt-10">
+      {/* ------------------------------------------------------------------ */}
+      {/* SECTION HEADER                                                     */}
+      {/* ------------------------------------------------------------------ */}
+
       <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="max-w-2xl">
           <div className="flex items-center gap-2">
@@ -133,8 +47,9 @@ export default function PipelineFlow() {
             <p className="text-sm font-semibold text-primary">Sales journey</p>
           </div>
 
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h2 className="mt-2 bg-gradient-to-br from-[#0B1220] via-[#334155] to-[#0EA5E9] bg-clip-text text-2xl font-semibold tracking-[-0.035em] text-transparent sm:text-3xl">
             From first inquiry to decision
+            <span className="text-primary">.</span>
           </h2>
 
           <p className="mt-2 text-sm leading-6 text-muted sm:text-base">
@@ -145,9 +60,14 @@ export default function PipelineFlow() {
 
         <div className="flex items-center gap-2 self-start rounded-full border border-border bg-surface px-3.5 py-2 text-xs font-semibold text-body shadow-sm sm:self-auto">
           <span className="flex h-2 w-2 rounded-full bg-primary" />
-          {totalOpportunities} active opportunities
+          {totalActiveOpportunities} active{" "}
+          {totalActiveOpportunities === 1 ? "opportunity" : "opportunities"}
         </div>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* PIPELINE STAGES                                                    */}
+      {/* ------------------------------------------------------------------ */}
 
       <div className="relative mt-7">
         <div className="grid gap-4 lg:grid-cols-5 lg:gap-3">
@@ -155,8 +75,13 @@ export default function PipelineFlow() {
             const isLast = stageIndex === stages.length - 1;
 
             return (
-              <div key={stage.id} className="relative flex flex-col lg:min-w-0">
+              <div
+                key={stage.key}
+                className="relative flex flex-col lg:min-w-0"
+              >
                 <div className="relative flex flex-1 flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
+                  {/* Stage top accent */}
+
                   <div className="relative border-b border-border px-5 pb-5 pt-5">
                     <div className="absolute inset-x-0 top-0 h-1 bg-primary/80" />
 
@@ -185,12 +110,28 @@ export default function PipelineFlow() {
                     </div>
                   </div>
 
+                  {/* Stage leads */}
+
                   <div className="flex flex-1 flex-col bg-background/40 p-3">
-                    <div className="space-y-3">
-                      {stage.leads.map((lead) => (
-                        <PipelineLeadCard key={lead.id} {...lead} />
-                      ))}
-                    </div>
+                    {stage.leads.length > 0 ? (
+                      <div className="space-y-3">
+                        {stage.leads.map((lead) => (
+                          <PipelineLeadCard key={lead.id} {...lead} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex min-h-28 flex-1 items-center justify-center rounded-2xl border border-dashed border-border bg-surface/60 px-4 text-center">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">
+                            No active leads
+                          </p>
+
+                          <p className="mt-1 text-xs leading-5 text-muted">
+                            Opportunities entering this stage will appear here.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {stage.count > stage.leads.length && (
                       <button
@@ -202,13 +143,15 @@ export default function PipelineFlow() {
                       </button>
                     )}
 
-                    {stage.count === stage.leads.length && (
+                    {stage.count === stage.leads.length && stage.count > 0 && (
                       <div className="mt-3 flex min-h-10 items-center justify-center rounded-xl bg-surface text-xs font-medium text-muted">
                         All opportunities visible
                       </div>
                     )}
                   </div>
                 </div>
+
+                {/* Stage connector */}
 
                 {!isLast && (
                   <>
@@ -231,7 +174,51 @@ export default function PipelineFlow() {
         </div>
       </div>
 
-      <div className="mt-8 flex flex-col gap-3 rounded-2xl border border-primary/15 bg-primary-soft/40 px-4 py-4 sm:flex-row sm:items-center">
+      {/* ------------------------------------------------------------------ */}
+      {/* OUTCOMES                                                           */}
+      {/* ------------------------------------------------------------------ */}
+
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        <div className="flex items-center gap-3 rounded-2xl border border-success/15 bg-success/5 px-4 py-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-success shadow-sm">
+            <Trophy className="h-4 w-4" />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {wonCount}{" "}
+              {wonCount === 1 ? "opportunity won" : "opportunities won"}
+            </p>
+
+            <p className="mt-0.5 text-xs leading-5 text-muted">
+              Successfully closed opportunities.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 rounded-2xl border border-danger/15 bg-danger/5 px-4 py-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-danger shadow-sm">
+            <XCircle className="h-4 w-4" />
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {lostCount}{" "}
+              {lostCount === 1 ? "opportunity lost" : "opportunities lost"}
+            </p>
+
+            <p className="mt-0.5 text-xs leading-5 text-muted">
+              Opportunities that are no longer active.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* GUIDANCE                                                           */}
+      {/* ------------------------------------------------------------------ */}
+
+      <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/15 bg-primary-soft/40 px-4 py-4 sm:flex-row sm:items-center">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-primary shadow-sm">
           <CheckCircle2 className="h-4.5 w-4.5" />
         </div>
