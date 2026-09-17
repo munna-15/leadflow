@@ -1,14 +1,54 @@
-import AttentionPanel from "@/components/dashboard/AttentionPanel";
-import PipelineSnapshot from "@/components/dashboard/PipelineSnapshot";
+"use client";
 
+import { useCallback, useEffect, useState } from "react";
+
+import AttentionPanel from "@/components/dashboard/AttentionPanel";
+import DashboardSkeleton from "@/components/dashboard/DashboardSkeleton";
+import PipelineSnapshot from "@/components/dashboard/PipelineSnapshot";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 
+import { getDashboard, type DashboardData } from "@/services/dashboard.service";
+
 export default function DashboardPage() {
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await getDashboard();
+
+      setDashboard(data);
+    } catch (error) {
+      console.error("Failed to load dashboard:", error);
+
+      setError("Unable to load your dashboard. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDashboard();
+  }, [loadDashboard]);
+
+  const today = new Date();
+
+  const formattedDate = today.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
     <div className="mx-auto w-full max-w-7xl px-6 py-8 sm:px-8 lg:px-10">
       <div className="mb-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-          Monday, September 15
+          {formattedDate}
         </p>
 
         <div className="relative mt-3 inline-block">
@@ -24,13 +64,45 @@ export default function DashboardPage() {
         </div>
 
         <p className="mt-5 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-          Here’s what needs your attention today.
+          Here&apos;s what needs your attention today.
         </p>
       </div>
 
-      <AttentionPanel />
-      <PipelineSnapshot/>
-      <RecentActivity/>
+      {error ? (
+        <div className="rounded-3xl border border-danger/20 bg-red-50 px-6 py-6">
+          <p className="text-sm font-semibold text-danger">{error}</p>
+
+          <button
+            type="button"
+            onClick={loadDashboard}
+            className="mt-4 inline-flex items-center rounded-xl bg-danger px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:opacity-90"
+          >
+            Try again
+          </button>
+        </div>
+      ) : loading ? (
+        <DashboardSkeleton />
+      ) : (
+        <>
+          <AttentionPanel
+            items={dashboard?.attentionItems ?? []}
+            activeLeads={dashboard?.summary.activeLeads ?? 0}
+            highIntentLeads={dashboard?.summary.highIntentLeads ?? 0}
+            followUpsDue={dashboard?.summary.followUpsDue ?? 0}
+          />
+
+          <PipelineSnapshot
+            stages={dashboard?.pipeline.stages ?? []}
+            won={dashboard?.pipeline.won ?? 0}
+            lost={dashboard?.pipeline.lost ?? 0}
+          />
+
+          <RecentActivity
+            activities={dashboard?.recentActivities ?? []}
+            loading={false}
+          />
+        </>
+      )}
     </div>
   );
 }
