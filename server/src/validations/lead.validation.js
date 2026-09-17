@@ -5,7 +5,19 @@ const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid ID");
 const nullableString = (maxLength) =>
   z.string().trim().max(maxLength).nullable().optional();
 
-export const createLeadSchema = z.object({
+const leadStatusSchema = z.enum([
+  "new",
+  "qualified",
+  "contacted",
+  "meeting",
+  "negotiation",
+  "won",
+  "lost",
+]);
+
+const leadTemperatureSchema = z.enum(["hot", "warm", "cold"]);
+
+const leadFields = {
   name: z
     .string()
     .trim()
@@ -22,23 +34,23 @@ export const createLeadSchema = z.object({
 
   phone: nullableString(30),
 
-  source: z.string().trim().min(1, "Source cannot be empty").max(50).optional(),
-
-  status: z
-    .enum([
-      "new",
-      "qualified",
-      "contacted",
-      "meeting",
-      "negotiation",
-      "won",
-      "lost",
-    ])
+  source: z
+    .string()
+    .trim()
+    .min(1, "Source cannot be empty")
+    .max(50, "Source must be at most 50 characters")
     .optional(),
 
-  temperature: z.enum(["hot", "warm", "cold"]).optional(),
+  status: leadStatusSchema.optional(),
 
-  score: z.number().int().min(0).max(100).optional(),
+  temperature: leadTemperatureSchema.optional(),
+
+  score: z
+    .number()
+    .int()
+    .min(0, "Score cannot be below 0")
+    .max(100, "Score cannot be above 100")
+    .optional(),
 
   requirements: z.record(z.string(), z.unknown()).optional(),
 
@@ -47,6 +59,13 @@ export const createLeadSchema = z.object({
   assignedTo: objectIdSchema.nullable().optional(),
 
   nextFollowUpAt: z.string().datetime().nullable().optional(),
-});
+};
 
-export const updateLeadSchema = createLeadSchema.partial();
+export const createLeadSchema = z.object(leadFields);
+
+export const updateLeadSchema = z
+  .object(leadFields)
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field is required to update a lead",
+  });

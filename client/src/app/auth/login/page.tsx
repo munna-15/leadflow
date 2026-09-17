@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { login } from "@/services/auth.service";
 
 type FormErrors = {
   email?: string;
@@ -68,33 +68,18 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-        }),
+      await login({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setErrors({
-          form: result.message || "Unable to sign in",
-        });
-
-        return;
-      }
 
       router.push("/dashboard");
       router.refresh();
-    } catch {
+    } catch (error: any) {
       setErrors({
-        form: "Unable to connect to LeadFlow. Please try again.",
+        form:
+          error?.response?.data?.message ||
+          "Unable to sign in. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -290,7 +275,7 @@ export default function LoginPage() {
               </form>
 
               <p className="mt-6 text-center text-sm text-muted">
-                Don't have an account?{" "}
+                Don&apos;t have an account?{" "}
                 <Link
                   href="/auth/register"
                   className="font-semibold text-primary transition-colors hover:text-primary-dark"

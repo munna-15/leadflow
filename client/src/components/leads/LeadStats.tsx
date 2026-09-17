@@ -1,30 +1,8 @@
+import type { Lead } from "@/services/lead.service";
 
-const stats = [
-  {
-    label: "Total leads",
-    value: "24",
-    description: "Active opportunities",
-    type: "total",
-  },
-  {
-    label: "Hot leads",
-    value: "7",
-    description: "High purchase intent",
-    type: "hot",
-  },
-  {
-    label: "Warm leads",
-    value: "9",
-    description: "Potential opportunities",
-    type: "warm",
-  },
-  {
-    label: "Follow-ups due",
-    value: "4",
-    description: "Need attention today",
-    type: "due",
-  },
-];
+type LeadStatsProps = {
+  leads: Lead[];
+};
 
 const accentMap = {
   total: {
@@ -45,13 +23,57 @@ const accentMap = {
   },
 };
 
-export default function LeadStats() {
+export default function LeadStats({ leads }: LeadStatsProps) {
+  const now = new Date();
+
+  const totalLeads = leads.length;
+
+  const hotLeads = leads.filter((lead) => lead.temperature === "hot").length;
+
+  const warmLeads = leads.filter((lead) => lead.temperature === "warm").length;
+
+  const followUpsDue = leads.filter((lead) => {
+    if (!lead.nextFollowUpAt) {
+      return false;
+    }
+
+    return new Date(lead.nextFollowUpAt) <= now;
+  }).length;
+
+  const stats = [
+    {
+      label: "Total leads",
+      value: totalLeads,
+      description: "Active opportunities",
+      type: "total",
+    },
+    {
+      label: "Hot leads",
+      value: hotLeads,
+      description: "High purchase intent",
+      type: "hot",
+    },
+    {
+      label: "Warm leads",
+      value: warmLeads,
+      description: "Potential opportunities",
+      type: "warm",
+    },
+    {
+      label: "Follow-ups due",
+      value: followUpsDue,
+      description: "Need attention today",
+      type: "due",
+    },
+  ];
+
   return (
     <section className="mt-10">
       <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-5 py-4 sm:px-7">
           <div>
             <p className="text-sm font-semibold text-foreground">Lead pulse</p>
+
             <p className="mt-0.5 text-xs text-muted">
               A quick view of your current sales activity
             </p>
@@ -60,6 +82,7 @@ export default function LeadStats() {
           <div className="flex items-center gap-2 text-xs font-medium text-muted">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/40" />
+
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
             Live overview
@@ -78,16 +101,13 @@ export default function LeadStats() {
                     ? "border-b border-border xl:border-b-0 xl:border-r"
                     : ""
                 } ${
-                  index === 1
-                    ? "sm:border-r border-border xl:border-r"
-                    : ""
+                  index === 1 ? "sm:border-r border-border xl:border-r" : ""
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`h-2 w-2 rounded-full ${accent.dot}`}
-                    />
+                    <span className={`h-2 w-2 rounded-full ${accent.dot}`} />
+
                     <p className="text-sm font-medium text-muted">
                       {stat.label}
                     </p>
@@ -125,4 +145,3 @@ export default function LeadStats() {
     </section>
   );
 }
-

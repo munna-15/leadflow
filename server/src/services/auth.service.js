@@ -100,7 +100,6 @@ export const loginUser = async ({ email, password }) => {
 
   const business = await Business.findOne({
     _id: user.businessId,
-    owner: user._id,
     isActive: true,
   });
 

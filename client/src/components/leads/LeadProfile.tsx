@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -9,9 +8,110 @@ import {
   Phone,
   Sparkles,
 } from "lucide-react";
+
 import Link from "next/link";
 
-export default function LeadProfile() {
+import type {
+  Lead,
+  LeadStatus,
+  LeadTemperature,
+} from "@/services/lead.service";
+
+type LeadProfileProps = {
+  lead: Lead;
+};
+
+const statusLabels: Record<LeadStatus, string> = {
+  new: "New",
+  qualified: "Qualified",
+  contacted: "Contacted",
+  meeting: "Meeting",
+  negotiation: "Negotiation",
+  won: "Won",
+  lost: "Lost",
+};
+
+const temperatureStyles: Record<LeadTemperature, string> = {
+  hot: "bg-orange-50 text-orange-700",
+  warm: "bg-amber-50 text-amber-700",
+  cold: "bg-slate-100 text-slate-600",
+};
+
+const temperatureLabels: Record<LeadTemperature, string> = {
+  hot: "Hot lead",
+  warm: "Warm lead",
+  cold: "Cold lead",
+};
+
+const getInitials = (name: string) => {
+  const parts = name.trim().split(/\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+};
+
+const formatStatusDescription = (status: LeadStatus) => {
+  switch (status) {
+    case "new":
+      return "Recently captured opportunity";
+
+    case "qualified":
+      return "Ready for sales follow-up";
+
+    case "contacted":
+      return "Initial conversation started";
+
+    case "meeting":
+      return "Sales meeting in progress";
+
+    case "negotiation":
+      return "Deal is being negotiated";
+
+    case "won":
+      return "Opportunity converted successfully";
+
+    case "lost":
+      return "Opportunity is no longer active";
+
+    default:
+      return "Current sales opportunity";
+  }
+};
+
+const formatSource = (source: string) => {
+  if (!source) {
+    return "Unknown source";
+  }
+
+  return source.charAt(0).toUpperCase() + source.slice(1);
+};
+
+export default function LeadProfile({ lead }: LeadProfileProps) {
+  const initials = getInitials(lead.name);
+
+  const temperatureStyle = temperatureStyles[lead.temperature];
+
+  const temperatureLabel = temperatureLabels[lead.temperature];
+
+  const statusLabel = statusLabels[lead.status];
+
+  const assignedName = lead.assignedTo?.name || "Unassigned";
+
+  const assignedRole =
+    lead.assignedTo?.role === "owner"
+      ? "Owner"
+      : lead.assignedTo?.role === "admin"
+        ? "Admin"
+        : lead.assignedTo?.role === "sales"
+          ? "Sales"
+          : null;
+
+  const hasEmail = Boolean(lead.email);
+  const hasPhone = Boolean(lead.phone);
+
   return (
     <section>
       <Link
@@ -27,41 +127,49 @@ export default function LeadProfile() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-soft text-lg font-semibold text-primary">
-                RA
+                {initials}
               </div>
 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2.5">
                   <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                    Rahim Ahmed
+                    {lead.name}
                   </h1>
 
-                  <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
-                    Hot lead
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${temperatureStyle}`}
+                  >
+                    {temperatureLabel}
                   </span>
                 </div>
 
                 <p className="mt-2 text-sm text-muted">
-                  Qualified through website inquiry
+                  {formatSource(lead.source)} · {statusLabel}
                 </p>
 
-                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-body">
-                  <a
-                    href="mailto:rahim@example.com"
-                    className="inline-flex items-center gap-2 transition-colors hover:text-primary"
-                  >
-                    <Mail className="h-4 w-4 text-muted" />
-                    rahim@example.com
-                  </a>
+                {(hasEmail || hasPhone) && (
+                  <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-body">
+                    {hasEmail && (
+                      <a
+                        href={`mailto:${lead.email}`}
+                        className="inline-flex items-center gap-2 transition-colors hover:text-primary"
+                      >
+                        <Mail className="h-4 w-4 text-muted" />
+                        {lead.email}
+                      </a>
+                    )}
 
-                  <a
-                    href="tel:+8801700000000"
-                    className="inline-flex items-center gap-2 transition-colors hover:text-primary"
-                  >
-                    <Phone className="h-4 w-4 text-muted" />
-                    +880 1700-000000
-                  </a>
-                </div>
+                    {hasPhone && (
+                      <a
+                        href={`tel:${lead.phone}`}
+                        className="inline-flex items-center gap-2 transition-colors hover:text-primary"
+                      >
+                        <Phone className="h-4 w-4 text-muted" />
+                        {lead.phone}
+                      </a>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -93,10 +201,23 @@ export default function LeadProfile() {
 
             <div className="mt-2 flex items-end gap-2">
               <span className="text-3xl font-semibold tracking-tight text-foreground">
-                92
+                {lead.score}
               </span>
-              <span className="mb-1 text-sm font-medium text-success">
-                High intent
+
+              <span
+                className={`mb-1 text-sm font-medium ${
+                  lead.score >= 80
+                    ? "text-success"
+                    : lead.score >= 50
+                      ? "text-warning"
+                      : "text-muted"
+                }`}
+              >
+                {lead.score >= 80
+                  ? "High intent"
+                  : lead.score >= 50
+                    ? "Moderate intent"
+                    : "Low intent"}
               </span>
             </div>
           </div>
@@ -107,11 +228,11 @@ export default function LeadProfile() {
             </p>
 
             <p className="mt-2 text-lg font-semibold text-foreground">
-              Qualified
+              {statusLabel}
             </p>
 
             <p className="mt-1 text-sm text-muted">
-              Ready for sales follow-up
+              {formatStatusDescription(lead.status)}
             </p>
           </div>
 
@@ -121,13 +242,26 @@ export default function LeadProfile() {
             </p>
 
             <div className="mt-2 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background text-xs font-semibold text-foreground">
-                M
+              <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-background text-xs font-semibold text-foreground">
+                {lead.assignedTo?.avatar ? (
+                  <img
+                    src={lead.assignedTo.avatar}
+                    alt={assignedName}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  getInitials(assignedName)
+                )}
               </div>
 
               <div>
-                <p className="text-sm font-semibold text-foreground">Munna</p>
-                <p className="text-xs text-muted">Owner</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {assignedName}
+                </p>
+
+                <p className="text-xs text-muted">
+                  {assignedRole || "No owner assigned"}
+                </p>
               </div>
             </div>
           </div>
@@ -150,4 +284,3 @@ export default function LeadProfile() {
     </section>
   );
 }
-

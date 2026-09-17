@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+import { register } from "@/services/auth.service";
 
 type FormErrors = {
   name?: string;
@@ -95,56 +95,41 @@ export default function RegisterPage() {
     setErrors({});
 
     try {
-      const response = await fetch(`${API_URL}/auth/register`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          name: form.name.trim(),
-          businessName: form.businessName.trim(),
-          email: form.email.trim().toLowerCase(),
-          password: form.password,
-          confirmPassword: form.confirmPassword,
-        }),
+      await register({
+        name: form.name.trim(),
+        businessName: form.businessName.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        confirmPassword: form.confirmPassword,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        if (Array.isArray(result.errors)) {
-          const fieldErrors: FormErrors = {};
-
-          result.errors.forEach(
-            (error: { field?: string; message?: string }) => {
-              if (error.field && error.field in form) {
-                fieldErrors[error.field as keyof FormErrors] = error.message;
-              }
-            },
-          );
-
-          if (Object.keys(fieldErrors).length > 0) {
-            setErrors(fieldErrors);
-          } else {
-            setErrors({
-              form: result.message || "Registration failed",
-            });
-          }
-        } else {
-          setErrors({
-            form: result.message || "Registration failed",
-          });
-        }
-
-        return;
-      }
 
       router.push("/auth/login");
-    } catch {
-      setErrors({
-        form: "Unable to connect to LeadFlow. Please try again.",
-      });
+    } catch (error: any) {
+      const responseData = error?.response?.data;
+
+      if (Array.isArray(responseData?.errors)) {
+        const fieldErrors: FormErrors = {};
+
+        responseData.errors.forEach(
+          (error: { field?: string; message?: string }) => {
+            if (error.field && error.field in form) {
+              fieldErrors[error.field as keyof FormErrors] = error.message;
+            }
+          },
+        );
+
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+        } else {
+          setErrors({
+            form: responseData.message || "Registration failed",
+          });
+        }
+      } else {
+        setErrors({
+          form: responseData?.message || "Registration failed",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -189,6 +174,7 @@ export default function RegisterPage() {
               ].map((item) => (
                 <div key={item} className="flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
+
                   <span className="text-sm font-medium text-body">{item}</span>
                 </div>
               ))}

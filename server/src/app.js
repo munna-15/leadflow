@@ -4,7 +4,7 @@ import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes.js";
 import leadRoutes from "./routes/lead.routes.js";
-
+import pipelineRoutes from "./routes/pipeline.routes.js";
 
 import errorHandler from "./middleware/error.middleware.js";
 
@@ -31,6 +31,7 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 
 app.use("/api/leads", leadRoutes);
+app.use("/api/pipeline", pipelineRoutes);
 
 app.use(errorHandler);
 
