@@ -1,6 +1,5 @@
+
 import {
-  ArrowDownRight,
-  ArrowUpRight,
   CheckCircle2,
   CircleDollarSign,
   Flame,
@@ -8,58 +7,49 @@ import {
   Users,
 } from "lucide-react";
 
+import type { AnalyticsOverview as AnalyticsOverviewData } from "@/services/analytics.service";
+
+interface AnalyticsOverviewProps {
+  data: AnalyticsOverviewData;
+}
+
 const metrics = [
   {
+    key: "totalLeads",
     label: "Total leads",
-    value: "124",
-    change: "+18%",
-    comparison: "vs previous period",
     description: "New opportunities captured",
     icon: Users,
     tone: "primary",
-    trend: "up",
   },
   {
+    key: "qualified",
     label: "Qualified",
-    value: "82",
-    change: "+12%",
-    comparison: "vs previous period",
-    description: "Leads showing real intent",
+    description: "Leads currently qualified",
     icon: Target,
     tone: "primary",
-    trend: "up",
   },
   {
+    key: "meetings",
     label: "Meetings",
-    value: "31",
-    change: "+9%",
-    comparison: "vs previous period",
-    description: "Sales conversations reached",
+    description: "Leads currently in meetings",
     icon: CheckCircle2,
     tone: "success",
-    trend: "up",
   },
   {
+    key: "won",
     label: "Won",
-    value: "12",
-    change: "+20%",
-    comparison: "vs previous period",
     description: "Opportunities converted",
     icon: CircleDollarSign,
     tone: "success",
-    trend: "up",
   },
   {
+    key: "conversionRate",
     label: "Conversion",
-    value: "9.7%",
-    change: "-1.2%",
-    comparison: "vs previous period",
     description: "Lead-to-customer conversion",
     icon: Flame,
     tone: "warning",
-    trend: "down",
   },
-];
+] as const;
 
 const toneStyles = {
   primary: {
@@ -74,23 +64,35 @@ const toneStyles = {
     icon: "bg-orange-50 text-orange-600",
     accent: "bg-orange-500",
   },
+} as const;
+
+const getMetricValue = (
+  data: AnalyticsOverviewData,
+  key: (typeof metrics)[number]["key"],
+) => {
+  if (key === "conversionRate") {
+    return `${data.conversionRate}%`;
+  }
+
+  return data[key].toLocaleString();
 };
 
-export default function AnalyticsOverview() {
+export default function AnalyticsOverview({
+  data,
+}: AnalyticsOverviewProps) {
   return (
-    <section className="mt-8">
+    <section className="mt-10">
       <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-sm">
         <div className="grid divide-y divide-border sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-5 lg:divide-y-0">
           {metrics.map((metric, index) => {
             const Icon = metric.icon;
-            const styles = toneStyles[metric.tone as keyof typeof toneStyles];
-
+            const styles = toneStyles[metric.tone];
             const isLast = index === metrics.length - 1;
 
             return (
               <div
-                key={metric.label}
-                className={`group relative p-5 transition-colors hover:bg-background sm:p-6 ${
+                key={metric.key}
+                className={`group relative p-5 transition-colors duration-200 hover:bg-background sm:p-6 ${
                   !isLast ? "lg:border-r lg:border-border" : ""
                 }`}
               >
@@ -102,21 +104,7 @@ export default function AnalyticsOverview() {
                   <div
                     className={`flex h-10 w-10 items-center justify-center rounded-xl ${styles.icon}`}
                   >
-                    <Icon className="h-4.5 w-4.5" />
-                  </div>
-
-                  <div
-                    className={`flex items-center gap-1 text-xs font-semibold ${
-                      metric.trend === "up" ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {metric.trend === "up" ? (
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    ) : (
-                      <ArrowDownRight className="h-3.5 w-3.5" />
-                    )}
-
-                    {metric.change}
+                    <Icon className="h-[18px] w-[18px]" />
                   </div>
                 </div>
 
@@ -125,15 +113,11 @@ export default function AnalyticsOverview() {
                     {metric.label}
                   </p>
 
-                  <div className="mt-1 flex items-baseline gap-2">
-                    <span className="text-3xl font-semibold tracking-tight text-foreground">
-                      {metric.value}
+                  <div className="mt-1">
+                    <span className="text-3xl font-semibold tracking-[-0.025em] text-foreground">
+                      {getMetricValue(data, metric.key)}
                     </span>
                   </div>
-
-                  <p className="mt-1 text-[11px] font-medium text-muted">
-                    {metric.comparison}
-                  </p>
 
                   <p className="mt-3 text-sm leading-5 text-body">
                     {metric.description}
@@ -143,21 +127,8 @@ export default function AnalyticsOverview() {
             );
           })}
         </div>
-
-        <div className="flex flex-col gap-3 border-t border-border bg-background/60 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary-soft text-primary">
-              <Target className="h-3.5 w-3.5" />
-            </div>
-
-            <p className="text-sm font-medium text-body">
-              66% of captured leads are currently qualified.
-            </p>
-          </div>
-
-          <p className="text-xs font-semibold text-primary">82 of 124 leads</p>
-        </div>
       </div>
     </section>
   );
 }
+
