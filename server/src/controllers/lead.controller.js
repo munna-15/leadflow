@@ -9,7 +9,7 @@ import {
 } from "../services/lead.service.js";
 
 export const create = asyncHandler(async (req, res) => {
-  const lead = await createLead(req.body, req.user.businessId);
+  const lead = await createLead(req.body, req.user.businessId, req.user.userId);
 
   res.status(201).json({
     success: true,
@@ -50,7 +50,12 @@ export const getOne = asyncHandler(async (req, res) => {
 });
 
 export const update = asyncHandler(async (req, res) => {
-  const lead = await updateLead(req.params.id, req.body, req.user.businessId);
+  const lead = await updateLead(
+    req.params.id,
+    req.body,
+    req.user.businessId,
+    req.user.userId,
+  );
 
   res.status(200).json({
     success: true,

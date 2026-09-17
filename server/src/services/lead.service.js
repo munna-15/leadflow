@@ -4,6 +4,8 @@ import Lead from "../models/lead.model.js";
 import User from "../models/user.model.js";
 import AppError from "../utils/AppError.js";
 
+import { createActivity } from "./activity.service.js";
+
 const CREATEABLE_FIELDS = [
   "name",
   "email",
@@ -74,9 +76,24 @@ const buildLeadQuery = (businessId, filters = {}) => {
       const safeSearch = escapeRegex(search);
 
       query.$or = [
-        { name: { $regex: safeSearch, $options: "i" } },
-        { email: { $regex: safeSearch, $options: "i" } },
-        { phone: { $regex: safeSearch, $options: "i" } },
+        {
+          name: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
+        {
+          email: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
+        {
+          phone: {
+            $regex: safeSearch,
+            $options: "i",
+          },
+        },
       ];
     }
   }
@@ -97,13 +114,13 @@ const validateAssignedUser = async (assignedTo, businessId) => {
     _id: assignedTo,
     businessId,
     isActive: true,
-  }).select("_id");
+  }).select("_id name");
 
   if (!user) {
     throw new AppError("Assigned user does not belong to this business", 400);
   }
 
-  return user._id;
+  return user;
 };
 
 const findExistingLead = async (leadData, businessId) => {
@@ -131,18 +148,46 @@ const findExistingLead = async (leadData, businessId) => {
   });
 };
 
-export const createLead = async (data, businessId) => {
+const recordActivity = async ({
+  businessId,
+  leadId,
+  actorId,
+  type,
+  title,
+  description,
+  metadata = {},
+}) => {
+  try {
+    await createActivity({
+      businessId,
+      leadId,
+      actorId,
+      type,
+      title,
+      description,
+      metadata,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to record activity "${type}" for lead ${leadId}:`,
+      error,
+    );
+  }
+};
+
+export const createLead = async (data, businessId, actorId = null) => {
   const leadData = pickAllowedFields(data, CREATEABLE_FIELDS);
 
   if (leadData.email) {
     leadData.email = leadData.email.toLowerCase();
   }
 
+  let assignedUser = null;
+
   if (Object.prototype.hasOwnProperty.call(leadData, "assignedTo")) {
-    leadData.assignedTo = await validateAssignedUser(
-      leadData.assignedTo,
-      businessId,
-    );
+    assignedUser = await validateAssignedUser(leadData.assignedTo, businessId);
+
+    leadData.assignedTo = assignedUser?._id ?? null;
   }
 
   const existingLead = await findExistingLead(leadData, businessId);
@@ -156,6 +201,34 @@ export const createLead = async (data, businessId) => {
     businessId,
   });
 
+  await recordActivity({
+    businessId,
+    leadId: lead._id,
+    actorId,
+    type: "lead_created",
+    title: "Lead created",
+    description: `${lead.name} was added to your lead pipeline.`,
+    metadata: {
+      source: lead.source,
+      status: lead.status,
+      temperature: lead.temperature,
+    },
+  });
+
+  if (assignedUser) {
+    await recordActivity({
+      businessId,
+      leadId: lead._id,
+      actorId,
+      type: "lead_assigned",
+      title: "Lead assigned",
+      description: `${lead.name} was assigned to ${assignedUser.name}.`,
+      metadata: {
+        assignedTo: assignedUser._id,
+      },
+    });
+  }
+
   return lead;
 };
 
@@ -164,7 +237,9 @@ export const getLeads = async (businessId, filters = {}) => {
 
   const leads = await Lead.find(query)
     .populate("assignedTo", "name email avatar role")
-    .sort({ createdAt: -1 });
+    .sort({
+      createdAt: -1,
+    });
 
   return leads;
 };
@@ -186,7 +261,7 @@ export const getLeadById = async (leadId, businessId) => {
   return lead;
 };
 
-export const updateLead = async (leadId, data, businessId) => {
+export const updateLead = async (leadId, data, businessId, actorId = null) => {
   if (!mongoose.isValidObjectId(leadId)) {
     throw new AppError("Invalid lead ID", 400);
   }
@@ -202,18 +277,130 @@ export const updateLead = async (leadId, data, businessId) => {
 
   const updateData = pickAllowedFields(data, UPDATABLE_FIELDS);
 
+  const previousStatus = lead.status;
+
+  const previousTemperature = lead.temperature;
+
+  const previousAssignedTo = lead.assignedTo
+    ? lead.assignedTo.toString()
+    : null;
+
+  let assignedUser = null;
+
   if (Object.prototype.hasOwnProperty.call(updateData, "assignedTo")) {
-    updateData.assignedTo = await validateAssignedUser(
+    assignedUser = await validateAssignedUser(
       updateData.assignedTo,
       businessId,
     );
+
+    updateData.assignedTo = assignedUser?._id ?? null;
+  }
+
+  if (updateData.email) {
+    updateData.email = updateData.email.toLowerCase();
   }
 
   Object.assign(lead, updateData);
 
   await lead.save();
 
-  return lead;
+  const currentAssignedTo = lead.assignedTo ? lead.assignedTo.toString() : null;
+
+  if (
+    Object.prototype.hasOwnProperty.call(updateData, "status") &&
+    previousStatus !== lead.status
+  ) {
+    await recordActivity({
+      businessId,
+      leadId: lead._id,
+      actorId,
+      type: "status_changed",
+      title: "Lead status changed",
+      description: `${lead.name} moved from ${previousStatus} to ${lead.status}.`,
+      metadata: {
+        from: previousStatus,
+        to: lead.status,
+      },
+    });
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(updateData, "temperature") &&
+    previousTemperature !== lead.temperature
+  ) {
+    await recordActivity({
+      businessId,
+      leadId: lead._id,
+      actorId,
+      type: "temperature_changed",
+      title: "Lead temperature changed",
+      description: `${lead.name} changed from ${previousTemperature} to ${lead.temperature}.`,
+      metadata: {
+        from: previousTemperature,
+        to: lead.temperature,
+      },
+    });
+  }
+
+  if (
+    Object.prototype.hasOwnProperty.call(updateData, "assignedTo") &&
+    previousAssignedTo !== currentAssignedTo
+  ) {
+    if (assignedUser) {
+      await recordActivity({
+        businessId,
+        leadId: lead._id,
+        actorId,
+        type: "lead_assigned",
+        title: "Lead assigned",
+        description: `${lead.name} was assigned to ${assignedUser.name}.`,
+        metadata: {
+          previousAssignee: previousAssignedTo,
+          assignedTo: assignedUser._id,
+        },
+      });
+    } else {
+      await recordActivity({
+        businessId,
+        leadId: lead._id,
+        actorId,
+        type: "lead_assigned",
+        title: "Lead unassigned",
+        description: `${lead.name} was removed from the assigned sales queue.`,
+        metadata: {
+          previousAssignee: previousAssignedTo,
+          assignedTo: null,
+        },
+      });
+    }
+  }
+
+  const hasTrackedFieldChange =
+    (Object.prototype.hasOwnProperty.call(updateData, "status") &&
+      previousStatus !== lead.status) ||
+    (Object.prototype.hasOwnProperty.call(updateData, "temperature") &&
+      previousTemperature !== lead.temperature) ||
+    (Object.prototype.hasOwnProperty.call(updateData, "assignedTo") &&
+      previousAssignedTo !== currentAssignedTo);
+
+  if (!hasTrackedFieldChange && Object.keys(updateData).length > 0) {
+    await recordActivity({
+      businessId,
+      leadId: lead._id,
+      actorId,
+      type: "lead_updated",
+      title: "Lead updated",
+      description: `${lead.name}'s lead information was updated.`,
+      metadata: {
+        fields: Object.keys(updateData),
+      },
+    });
+  }
+
+  return Lead.findById(lead._id).populate(
+    "assignedTo",
+    "name email avatar role",
+  );
 };
 
 export const deleteLead = async (leadId, businessId) => {

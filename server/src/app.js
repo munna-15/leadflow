@@ -5,6 +5,9 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import leadRoutes from "./routes/lead.routes.js";
 import pipelineRoutes from "./routes/pipeline.routes.js";
+import followUpRoutes from "./routes/followUp.routes.js";
+import activityRoutes from "./routes/activity.routes.js";
+
 
 import errorHandler from "./middleware/error.middleware.js";
 
@@ -32,6 +35,9 @@ app.use("/api/auth", authRoutes);
 
 app.use("/api/leads", leadRoutes);
 app.use("/api/pipeline", pipelineRoutes);
+app.use("/api/follow-ups", followUpRoutes);
+app.use("/api/activities", activityRoutes);
+
 
 app.use(errorHandler);
 
