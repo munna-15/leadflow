@@ -11,6 +11,8 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 
 import analyticsRoutes from "./routes/analytics.routes.js";
 
+import aiNextActionRoutes from "./routes/aiNextAction.routes.js";
+
 import errorHandler from "./middleware/error.middleware.js";
 
 const app = express();
@@ -41,6 +43,7 @@ app.use("/api/follow-ups", followUpRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api", aiNextActionRoutes);
 
 
 app.use(errorHandler);
