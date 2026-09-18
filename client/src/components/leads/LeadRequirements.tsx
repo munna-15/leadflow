@@ -34,22 +34,27 @@ const requirementConfig: Record<
     label: "Location",
     icon: MapPin,
   },
+
   propertyType: {
     label: "Property type",
     icon: Home,
   },
+
   bedrooms: {
     label: "Bedrooms",
     icon: BedDouble,
   },
+
   budget: {
     label: "Budget",
     icon: CircleDollarSign,
   },
+
   timeline: {
     label: "Timeline",
     icon: CalendarDays,
   },
+
   intent: {
     label: "Intent",
     icon: Tag,
@@ -62,12 +67,72 @@ const formatLabel = (key: string) => {
     .replace(/[_-]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/^./, (character) => character.toUpperCase());
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
-const formatValue = (key: string, value: unknown) => {
-  if (value === null || value === undefined || String(value).trim() === "") {
+const formatEnumValue = (value: string) => {
+  return value
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+};
+
+const formatBudget = (value: string) => {
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    return value;
+  }
+
+  return numericValue.toLocaleString("en-US");
+};
+
+const formatValue = (key: string, value: unknown): string | null => {
+  if (value === null || value === undefined) {
     return null;
+  }
+
+  if (typeof value === "string") {
+    const stringValue = value.trim();
+
+    if (!stringValue) {
+      return null;
+    }
+
+    if (key === "propertyType" || key === "timeline" || key === "intent") {
+      return formatEnumValue(stringValue);
+    }
+
+    if (key === "bedrooms") {
+      if (/bedroom/i.test(stringValue)) {
+        return stringValue;
+      }
+
+      return `${stringValue} bedrooms`;
+    }
+
+    if (key === "budget") {
+      return formatBudget(stringValue);
+    }
+
+    return stringValue;
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+
+    if (key === "budget") {
+      return value.toLocaleString("en-US");
+    }
+
+    if (key === "bedrooms") {
+      return `${value} bedrooms`;
+    }
+
+    return String(value);
   }
 
   if (typeof value === "boolean") {
@@ -75,46 +140,22 @@ const formatValue = (key: string, value: unknown) => {
   }
 
   if (Array.isArray(value)) {
-    return value.join(", ");
+    const formattedValues = value
+      .map((item) => formatValue(key, item))
+      .filter(Boolean);
+
+    return formattedValues.length > 0 ? formattedValues.join(", ") : null;
   }
 
   if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
-  const stringValue = String(value).trim();
-
-  if (key === "propertyType") {
-    return stringValue
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, (character) => character.toUpperCase());
-  }
-
-  if (key === "bedrooms") {
-    return `${stringValue} bedrooms`;
-  }
-
-  if (key === "budget") {
-    const numericValue = Number(stringValue);
-
-    if (Number.isFinite(numericValue) && numericValue >= 100000) {
-      return `৳${numericValue.toLocaleString("en-BD")}`;
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return null;
     }
   }
 
-  if (key === "intent") {
-    return stringValue
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, (character) => character.toUpperCase());
-  }
-
-  if (key === "timeline") {
-    return stringValue
-      .replace(/[_-]/g, " ")
-      .replace(/\b\w/g, (character) => character.toUpperCase());
-  }
-
-  return stringValue;
+  return null;
 };
 
 export default function LeadRequirements({ lead }: LeadRequirementsProps) {
@@ -139,6 +180,8 @@ export default function LeadRequirements({ lead }: LeadRequirementsProps) {
     })
     .filter((item): item is RequirementItem => item !== null);
 
+  const hasRequirements = requirementItems.length > 0;
+
   return (
     <section className="rounded-3xl border border-border bg-surface p-6 shadow-sm sm:p-7">
       <div>
@@ -148,12 +191,12 @@ export default function LeadRequirements({ lead }: LeadRequirementsProps) {
           What this lead is looking for
         </h2>
 
-        <p className="mt-2 text-sm leading-6 text-muted">
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
           Key requirements captured from the lead and qualification workflow.
         </p>
       </div>
 
-      {requirementItems.length > 0 ? (
+      {hasRequirements ? (
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           {requirementItems.map((requirement) => {
             const Icon = requirement.icon;
@@ -163,17 +206,17 @@ export default function LeadRequirements({ lead }: LeadRequirementsProps) {
                 key={requirement.key}
                 className="group rounded-2xl border border-border bg-background p-4 transition-colors hover:border-primary/30 hover:bg-primary-soft/30"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-start gap-3">
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-muted transition-colors group-hover:text-primary">
                     <Icon className="h-4 w-4" />
                   </div>
 
                   <div className="min-w-0">
-                    <p className="text-xs font-medium text-muted">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted">
                       {requirement.label}
                     </p>
 
-                    <p className="mt-1 break-words text-sm font-semibold text-foreground">
+                    <p className="mt-1.5 break-words text-sm font-semibold leading-6 text-foreground">
                       {requirement.value}
                     </p>
                   </div>
@@ -196,6 +239,26 @@ export default function LeadRequirements({ lead }: LeadRequirementsProps) {
             Requirements will appear here when they are added manually or
             extracted through the qualification workflow.
           </p>
+        </div>
+      )}
+
+      {lead.aiIntent && (
+        <div className="mt-5 rounded-2xl border border-primary/15 bg-primary-soft/30 p-5">
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface text-primary">
+              <Tag className="h-4 w-4" />
+            </div>
+
+            <div className="min-w-0">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                AI intent
+              </p>
+
+              <p className="mt-1.5 break-words text-sm font-semibold leading-6 text-foreground">
+                {lead.aiIntent}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

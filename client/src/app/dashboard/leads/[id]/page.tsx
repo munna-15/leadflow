@@ -18,13 +18,18 @@ export default function LeadDetailsPage() {
   const leadId = typeof params.id === "string" ? params.id : "";
 
   const [lead, setLead] = useState<Lead | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!leadId) {
+      setLoading(false);
+      setError("The requested lead could not be identified.");
       return;
     }
+
+    let cancelled = false;
 
     const loadLead = async () => {
       try {
@@ -33,17 +38,32 @@ export default function LeadDetailsPage() {
 
         const data = await getLeadById(leadId);
 
+        if (cancelled) {
+          return;
+        }
+
         setLead(data);
       } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
         console.error("Failed to load lead details:", error);
 
+        setLead(null);
         setError("Unable to load this lead. Please try again.");
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     loadLead();
+
+    return () => {
+      cancelled = true;
+    };
   }, [leadId]);
 
   if (loading) {
@@ -80,12 +100,14 @@ export default function LeadDetailsPage() {
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[1.45fr_1fr]">
         <div className="space-y-6">
-          <LeadAIInsight lead={lead} />
+          <LeadAIInsight lead={lead} onLeadUpdated={setLead} />
+
           <LeadRequirements lead={lead} />
         </div>
 
         <div className="space-y-6">
           <LeadNextAction lead={lead} />
+
           <LeadActivity lead={lead} />
         </div>
       </div>

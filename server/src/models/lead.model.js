@@ -71,11 +71,46 @@ const leadSchema = new mongoose.Schema(
       default: {},
     },
 
+    /* ---------------------------------------------------------------------- */
+    /* AI QUALIFICATION                                                       */
+    /* ---------------------------------------------------------------------- */
+
+    aiIntent: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 500,
+    },
+
     aiSummary: {
       type: String,
       trim: true,
       default: null,
+      maxlength: 2000,
     },
+
+    aiQualifiedAt: {
+      type: Date,
+      default: null,
+    },
+
+    aiProvider: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 50,
+    },
+
+    aiModel: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 100,
+    },
+
+    /* ---------------------------------------------------------------------- */
+    /* ASSIGNMENT & FOLLOW-UP                                                 */
+    /* ---------------------------------------------------------------------- */
 
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,

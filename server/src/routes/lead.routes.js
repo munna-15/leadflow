@@ -1,6 +1,7 @@
 import express from "express";
 
 import authMiddleware from "../middleware/auth.middleware.js";
+
 import validate from "../middleware/validate.middleware.js";
 
 import {
@@ -8,6 +9,7 @@ import {
   getAll,
   getOne,
   update,
+  qualifyWithAI,
   remove,
 } from "../controllers/lead.controller.js";
 
@@ -25,6 +27,8 @@ router.post("/", validate(createLeadSchema), create);
 router.get("/", getAll);
 
 router.get("/:id", getOne);
+
+router.post("/:id/qualify", qualifyWithAI);
 
 router.patch("/:id", validate(updateLeadSchema), update);
 

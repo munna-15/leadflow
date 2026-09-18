@@ -45,6 +45,14 @@ interface FollowUpResponse {
   };
 }
 
+interface FollowUpActionResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    followUp?: FollowUp;
+  };
+}
+
 export const getFollowUps = async (params?: {
   status?: FollowUpStatus;
   type?: FollowUpType;
@@ -89,6 +97,28 @@ export const updateFollowUp = async (
   );
 
   return response.data.data.followUp;
+};
+
+export const completeFollowUp = async (followUpId: string) => {
+  const response = await api.patch<FollowUpActionResponse>(
+    `/follow-ups/${followUpId}`,
+    {
+      status: "completed",
+    },
+  );
+
+  return response.data.data?.followUp ?? null;
+};
+
+export const cancelFollowUp = async (followUpId: string) => {
+  const response = await api.patch<FollowUpActionResponse>(
+    `/follow-ups/${followUpId}`,
+    {
+      status: "cancelled",
+    },
+  );
+
+  return response.data.data?.followUp ?? null;
 };
 
 export const deleteFollowUp = async (followUpId: string) => {

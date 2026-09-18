@@ -34,7 +34,11 @@ export interface Lead {
   temperature: LeadTemperature;
   score: number;
   requirements: LeadRequirements;
+  aiIntent: string | null;
   aiSummary: string | null;
+  aiProvider: string | null;
+  aiModel: string | null;
+  aiQualifiedAt: string | null;
   assignedTo: AssignedUser | null;
   nextFollowUpAt: string | null;
   createdAt: string;
@@ -111,6 +115,22 @@ export const updateLead = async (
   }>,
 ) => {
   const response = await api.patch<LeadResponse>(`/leads/${leadId}`, payload);
+
+  return response.data.data.lead;
+};
+
+export const qualifyLeadWithAI = async (
+  leadId: string,
+  businessContext?: string | null,
+) => {
+  const response = await api.post<LeadResponse>(
+    `/leads/${leadId}/qualify`,
+    businessContext
+      ? {
+          businessContext,
+        }
+      : {},
+  );
 
   return response.data.data.lead;
 };

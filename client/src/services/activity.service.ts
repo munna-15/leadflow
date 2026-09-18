@@ -1,4 +1,4 @@
-import api from "../lib/api";
+import api from "@/lib/api";
 
 export type ActivityType =
   | "lead_created"
@@ -14,8 +14,8 @@ export type ActivityType =
 export type ActivityLead = {
   _id: string;
   name: string;
-  email?: string | null;
-  phone?: string | null;
+  email: string | null;
+  phone: string | null;
   status: string;
   temperature: "hot" | "warm" | "cold";
   score: number;
@@ -26,7 +26,7 @@ export type ActivityActor = {
   name: string;
   email: string;
   role: string;
-  avatar?: string | null;
+  avatar: string | null;
 };
 
 export type Activity = {

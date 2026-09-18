@@ -5,6 +5,7 @@ import {
   getLeads,
   getLeadById,
   updateLead,
+  qualifyLeadWithAI,
   deleteLead,
 } from "../services/lead.service.js";
 
@@ -60,6 +61,23 @@ export const update = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Lead updated successfully",
+    data: {
+      lead,
+    },
+  });
+});
+
+export const qualifyWithAI = asyncHandler(async (req, res) => {
+  const lead = await qualifyLeadWithAI(
+    req.params.id,
+    req.user.businessId,
+    req.user.userId,
+    req.body?.businessContext || null,
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Lead qualified successfully with AI",
     data: {
       lead,
     },

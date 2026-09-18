@@ -1,10 +1,15 @@
 import mongoose from "mongoose";
 
 import Lead from "../models/lead.model.js";
+
 import User from "../models/user.model.js";
+
 import AppError from "../utils/AppError.js";
 
 import { createActivity } from "./activity.service.js";
+
+import { qualifyLeadWithAI as runAIQualification } from "./aiQualification.service.js";
+
 
 const CREATEABLE_FIELDS = [
   "name",
@@ -396,6 +401,64 @@ export const updateLead = async (leadId, data, businessId, actorId = null) => {
       },
     });
   }
+
+  return Lead.findById(lead._id).populate(
+    "assignedTo",
+    "name email avatar role",
+  );
+};
+
+export const qualifyLeadWithAI = async (
+  leadId,
+  businessId,
+  actorId = null,
+  businessContext = null,
+) => {
+  if (!mongoose.isValidObjectId(leadId)) {
+    throw new AppError("Invalid lead ID", 400);
+  }
+
+  const lead = await Lead.findOne({
+    _id: leadId,
+    businessId,
+  });
+
+  if (!lead) {
+    throw new AppError("Lead not found", 404);
+  }
+
+  const qualification = await runAIQualification({
+    lead,
+    businessContext,
+  });
+
+  lead.score = qualification.score;
+  lead.temperature = qualification.temperature;
+  lead.requirements = qualification.requirements;
+  lead.aiIntent = qualification.intent;
+  lead.aiSummary = qualification.summary;
+  lead.aiQualifiedAt = new Date();
+  lead.aiProvider = qualification.provider;
+  lead.aiModel = qualification.model;
+
+  await lead.save();
+
+  await recordActivity({
+    businessId,
+    leadId: lead._id,
+    actorId,
+    type: "lead_updated",
+    title: "Lead qualified by AI",
+    description: `${lead.name} was analyzed by AI with a ${lead.score}% qualification score and ${lead.temperature} temperature.`,
+    metadata: {
+      aiIntent: lead.aiIntent,
+      score: lead.score,
+      temperature: lead.temperature,
+      provider: lead.aiProvider,
+      model: lead.aiModel,
+      aiQualifiedAt: lead.aiQualifiedAt,
+    },
+  });
 
   return Lead.findById(lead._id).populate(
     "assignedTo",
