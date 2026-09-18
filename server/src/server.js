@@ -5,6 +5,9 @@ dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 dotenv.config();
 
+
+
+
 const { default: app } = await import("./app.js");
 const { default: connectDatabase } = await import("./config/db.js");
 

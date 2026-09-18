@@ -17,6 +17,27 @@ const businessSchema = new mongoose.Schema(
       index: true,
     },
 
+    industry: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 100,
+    },
+
+    website: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 500,
+    },
+
+    location: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 200,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

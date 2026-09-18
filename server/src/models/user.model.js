@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema(
       select: false,
     },
 
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+
     role: {
       type: String,
       enum: ["owner", "admin", "sales"],
@@ -42,6 +48,18 @@ const userSchema = new mongoose.Schema(
     avatar: {
       type: String,
       default: null,
+    },
+
+    avatarPublicId: {
+      type: String,
+      default: null,
+    },
+
+    timezone: {
+      type: String,
+      trim: true,
+      default: "Asia/Dhaka",
+      maxlength: 100,
     },
 
     isActive: {

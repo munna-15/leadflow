@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import User from "../models/user.model.js";
 import Business from "../models/business.model.js";
 import AppError from "../utils/AppError.js";
+
 import { signToken } from "../utils/jwt.js";
 
 export const registerUser = async ({ name, email, password, businessName }) => {
@@ -61,6 +62,7 @@ export const registerUser = async ({ name, email, password, businessName }) => {
         role: createdUser.role,
         businessId: createdUser.businessId,
       },
+
       business: {
         id: createdBusiness._id,
         name: createdBusiness.name,
@@ -78,7 +80,9 @@ export const registerUser = async ({ name, email, password, businessName }) => {
 };
 
 export const loginUser = async ({ email, password }) => {
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({
+    email,
+  }).select("+password");
 
   if (!user) {
     throw new AppError("Invalid email or password", 401);
@@ -111,10 +115,12 @@ export const loginUser = async ({ email, password }) => {
     userId: user._id.toString(),
     businessId: user.businessId.toString(),
     role: user.role,
+    tokenVersion: user.tokenVersion,
   });
 
   return {
     token,
+
     user: {
       id: user._id,
       name: user.name,
@@ -122,9 +128,59 @@ export const loginUser = async ({ email, password }) => {
       role: user.role,
       businessId: user.businessId,
     },
+
     business: {
       id: business._id,
       name: business.name,
     },
+  };
+};
+
+export const changePassword = async (userId, currentPassword, newPassword) => {
+  if (!userId) {
+    throw new AppError("Authenticated user is required", 401);
+  }
+
+  if (!currentPassword || !newPassword) {
+    throw new AppError("Current password and new password are required", 400);
+  }
+
+  const user = await User.findById(userId).select("+password");
+
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  if (!user.isActive) {
+    throw new AppError("This account is inactive", 403);
+  }
+
+  const isCurrentPasswordValid = await bcrypt.compare(
+    currentPassword,
+    user.password,
+  );
+
+  if (!isCurrentPasswordValid) {
+    throw new AppError("Current password is incorrect", 401);
+  }
+
+  const isSamePassword = await bcrypt.compare(newPassword, user.password);
+
+  if (isSamePassword) {
+    throw new AppError(
+      "New password must be different from the current password",
+      400,
+    );
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+
+  user.password = passwordHash;
+  user.tokenVersion += 1;
+
+  await user.save();
+
+  return {
+    tokenVersion: user.tokenVersion,
   };
 };

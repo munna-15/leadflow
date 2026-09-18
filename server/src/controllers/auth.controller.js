@@ -1,6 +1,10 @@
 import asyncHandler from "../utils/asyncHandler.js";
 
-import { registerUser, loginUser } from "../services/auth.service.js";
+import {
+  registerUser,
+  loginUser,
+  changePassword as changePasswordService,
+} from "../services/auth.service.js";
 
 const getCookieOptions = () => {
   const isProduction = process.env.NODE_ENV === "production";
@@ -75,5 +79,21 @@ export const logout = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: "Logout successful",
+  });
+});
+
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  await changePasswordService(req.user.userId, currentPassword, newPassword);
+
+  res.clearCookie(
+    process.env.COOKIE_NAME || "leadflow_token",
+    getClearCookieOptions(),
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully. Please sign in again.",
   });
 });
