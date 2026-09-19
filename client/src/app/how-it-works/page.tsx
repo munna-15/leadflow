@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   ArrowRight,
   ArrowUpRight,
   BrainCircuit,
   CalendarClock,
   CheckCircle2,
-  ClipboardCheck,
   MessageSquareText,
   Sparkles,
   Target,
@@ -16,6 +16,7 @@ import {
   Workflow,
   Zap,
 } from "lucide-react";
+
 import { motion } from "motion/react";
 
 import SiteNavbar from "@/components/layout/SiteNavbar";
@@ -112,26 +113,62 @@ const attentionSignals = [
   },
 ];
 
+const journeySteps = [
+  {
+    icon: MessageSquareText,
+    title: "Inquiry received",
+    text: "A potential customer submits a request.",
+  },
+  {
+    icon: BrainCircuit,
+    title: "Requirements understood",
+    text: "Relevant intent and requirements are structured.",
+  },
+  {
+    icon: Target,
+    title: "Opportunity prioritized",
+    text: "The lead receives useful attention signals.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Follow-up scheduled",
+    text: "The next action is connected to the lead.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Opportunity progresses",
+    text: "The lead moves through the sales workflow.",
+  },
+];
+
 export default function HowItWorksPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen overflow-x-hidden bg-background">
+      <SiteNavbar />
 
-  {/* NAVBAR   */}
-
-      <SiteNavbar/>
-
-    
-  {/* HERO */}
-      
+      {/* ------------------------------------------------------------------ */}
+      {/* HERO                                                               */}
+      {/* ------------------------------------------------------------------ */}
 
       <section className="relative overflow-hidden">
-        <div className="absolute left-1/2 top-0 -z-10 h-[34rem] w-[48rem] -translate-x-1/2 rounded-full bg-primary/[0.045] blur-3xl" />
+        <div
+          aria-hidden="true"
+          className="absolute left-1/2 top-0 -z-10 h-[28rem] w-[42rem] -translate-x-1/2 rounded-full bg-primary/[0.045] blur-3xl sm:h-[34rem] sm:w-[48rem]"
+        />
 
         <div className="mx-auto w-full max-w-7xl px-5 pb-20 pt-24 sm:px-8 sm:pb-24 sm:pt-28 lg:px-12 lg:pb-32 lg:pt-36">
           <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            initial={{
+              opacity: 0,
+              y: 18,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+            transition={{
+              duration: 0.6,
+            }}
             className="max-w-4xl"
           >
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-muted shadow-sm">
@@ -154,7 +191,7 @@ export default function HowItWorksPage() {
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link
                 href="/demo"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2"
               >
                 See it in action
                 <ArrowRight className="h-4 w-4" />
@@ -162,7 +199,7 @@ export default function HowItWorksPage() {
 
               <Link
                 href="/get-started"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-foreground transition-colors hover:bg-background"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-surface px-6 text-sm font-semibold text-foreground transition-colors hover:bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2"
               >
                 Get LeadFlow
                 <ArrowUpRight className="h-4 w-4" />
@@ -173,51 +210,130 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* FLOW OVERVIEW                                                       */}
+      {/* PREMIUM WORKFLOW STRIP                                             */}
       {/* ------------------------------------------------------------------ */}
 
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 lg:px-12 lg:py-20">
-          <div className="grid gap-3 md:grid-cols-5">
-            {workflowSteps.map((step, index) => {
-              const Icon = step.icon;
+      <section className="relative overflow-hidden border-y border-border bg-surface">
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(14,165,233,0.08),transparent_38%)]"
+        />
 
-              return (
-                <motion.div
-                  key={step.number}
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.2 }}
-                  transition={{
-                    duration: 0.45,
-                    delay: index * 0.05,
-                  }}
-                  className="relative rounded-2xl border border-border bg-background p-5"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-muted">
-                      {step.number}
-                    </span>
+        <div className="relative mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 sm:py-20 lg:px-12 lg:py-24">
+          <div className="mb-14 flex flex-col gap-4 lg:mb-16 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="h-px w-8 bg-primary" />
 
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-primary">
+                  One connected workflow
+                </p>
+              </div>
 
-                  <p className="mt-6 text-sm font-semibold text-foreground">
-                    {step.label}
-                  </p>
+              <h2 className="mt-4 max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.03em] text-foreground sm:text-4xl">
+                Every step moves the opportunity
+                <span className="text-primary"> forward.</span>
+              </h2>
+            </div>
 
-                  {index < workflowSteps.length - 1 && (
-                    <ArrowRight className="absolute -right-3 top-1/2 z-10 hidden h-5 w-5 -translate-y-1/2 text-border md:block" />
-                  )}
-                </motion.div>
-              );
-            })}
+            <p className="max-w-md text-sm leading-6 text-muted sm:text-base">
+              LeadFlow connects every stage so useful context follows the lead
+              instead of getting lost between teams and tools.
+            </p>
+          </div>
+
+          <div className="relative">
+            <div
+              aria-hidden="true"
+              className="absolute left-4 top-4 hidden h-px bg-gradient-to-r from-primary/20 via-primary/50 to-primary/20 lg:right-4 lg:block"
+            />
+
+            <div
+              aria-hidden="true"
+              className="absolute left-4 top-4 bottom-4 w-px bg-gradient-to-b from-primary/20 via-border to-primary/20 lg:hidden"
+            />
+
+            <div className="grid gap-0 lg:grid-cols-5">
+              {workflowSteps.map((step, index) => {
+                const Icon = step.icon;
+                const isLast = index === workflowSteps.length - 1;
+
+                return (
+                  <motion.div
+                    key={step.number}
+                    initial={{
+                      opacity: 0,
+                      y: 16,
+                    }}
+                    whileInView={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    viewport={{
+                      once: true,
+                      amount: 0.25,
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      delay: index * 0.08,
+                    }}
+                    className="group relative lg:px-4 first:lg:pl-0 last:lg:pr-0"
+                  >
+                    <div className="flex items-start gap-5 py-6 lg:block lg:py-0">
+                      <div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface transition-all duration-300 group-hover:border-primary group-hover:bg-primary group-hover:shadow-[0_0_0_6px_rgba(14,165,233,0.08)]">
+                        <span className="text-[10px] font-bold tracking-[0.08em] text-muted transition-colors duration-300 group-hover:text-white">
+                          {step.number}
+                        </span>
+                      </div>
+
+                      <div className="min-w-0 pt-0.5 lg:mt-7 lg:pt-0">
+                        <div className="flex items-center gap-3">
+                          <Icon className="h-4 w-4 text-primary transition-transform duration-300 group-hover:scale-110" />
+
+                          <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted">
+                            {step.label}
+                          </span>
+                        </div>
+
+                        <h3 className="mt-3 text-xl font-semibold tracking-tight text-foreground transition-colors duration-300 group-hover:text-primary sm:text-2xl">
+                          {step.title.replace(".", "")}
+                        </h3>
+
+                        <p className="mt-3 max-w-xs text-sm leading-6 text-muted">
+                          {step.description.split(".")[0]}.
+                        </p>
+                      </div>
+                    </div>
+
+                    {!isLast && (
+                      <div
+                        aria-hidden="true"
+                        className="absolute left-[2rem] top-[3.75rem] h-[calc(100%-3.75rem)] w-12 lg:left-auto lg:right-0 lg:top-[4.5rem] lg:h-px lg:w-10"
+                      />
+                    )}
+
+                    <div
+                      aria-hidden="true"
+                      className="pointer-events-none absolute bottom-0 left-0 h-px w-0 bg-primary transition-all duration-500 group-hover:w-16 lg:bottom-[-2.5rem]"
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="mt-14 flex items-center gap-3 border-t border-border pt-6 lg:mt-16">
+            <span className="h-2 w-2 rounded-full bg-primary shadow-[0_0_0_5px_rgba(14,165,233,0.08)]" />
+
+            <p className="text-xs font-medium tracking-wide text-muted">
+              Capture → Understand → Prioritize → Act → Progress
+            </p>
           </div>
         </div>
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* DETAILED WORKFLOW                                                  */}
+      {/* DETAILED WORKFLOW                                                 */}
       {/* ------------------------------------------------------------------ */}
 
       <section>
@@ -245,10 +361,21 @@ export default function HowItWorksPage() {
               return (
                 <motion.article
                   key={step.number}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.15 }}
-                  transition={{ duration: 0.55 }}
+                  initial={{
+                    opacity: 0,
+                    y: 20,
+                  }}
+                  whileInView={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  viewport={{
+                    once: true,
+                    amount: 0.15,
+                  }}
+                  transition={{
+                    duration: 0.55,
+                  }}
                   className={`overflow-hidden rounded-[1.75rem] border ${
                     isFeatured
                       ? "border-primary/20 bg-primary/[0.025]"
@@ -257,9 +384,9 @@ export default function HowItWorksPage() {
                 >
                   <div className="grid lg:grid-cols-[180px_1fr]">
                     <div
-                      className={`flex items-start justify-between border-b p-6 lg:border-b-0 lg:border-r ${
+                      className={`flex items-start justify-between border-b p-6 sm:p-7 lg:border-b-0 lg:border-r ${
                         isFeatured ? "border-primary/10" : "border-border"
-                      } sm:p-7`}
+                      }`}
                     >
                       <div>
                         <span className="text-xs font-semibold tracking-wide text-muted">
@@ -312,7 +439,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* ATTENTION LAYER                                                     */}
+      {/* ATTENTION LAYER                                                   */}
       {/* ------------------------------------------------------------------ */}
 
       <section className="bg-[#111827] text-white">
@@ -343,9 +470,18 @@ export default function HowItWorksPage() {
                 return (
                   <motion.div
                     key={signal.title}
-                    initial={{ opacity: 0, x: 18 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
+                    initial={{
+                      opacity: 0,
+                      x: 18,
+                    }}
+                    whileInView={{
+                      opacity: 1,
+                      x: 0,
+                    }}
+                    viewport={{
+                      once: true,
+                      amount: 0.2,
+                    }}
                     transition={{
                       duration: 0.5,
                       delay: index * 0.07,
@@ -374,7 +510,7 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* SAMPLE JOURNEY                                                      */}
+      {/* SAMPLE JOURNEY                                                    */}
       {/* ------------------------------------------------------------------ */}
 
       <section className="bg-surface">
@@ -400,41 +536,24 @@ export default function HowItWorksPage() {
               <div className="absolute left-5 top-5 h-[calc(100%-2.5rem)] w-px bg-border" />
 
               <div className="space-y-5">
-                {[
-                  {
-                    icon: MessageSquareText,
-                    title: "Inquiry received",
-                    text: "A potential customer submits a request.",
-                  },
-                  {
-                    icon: BrainCircuit,
-                    title: "Requirements understood",
-                    text: "Relevant intent and requirements are structured.",
-                  },
-                  {
-                    icon: Target,
-                    title: "Opportunity prioritized",
-                    text: "The lead receives useful attention signals.",
-                  },
-                  {
-                    icon: CalendarClock,
-                    title: "Follow-up scheduled",
-                    text: "The next action is connected to the lead.",
-                  },
-                  {
-                    icon: TrendingUp,
-                    title: "Opportunity progresses",
-                    text: "The lead moves through the sales workflow.",
-                  },
-                ].map((item, index) => {
+                {journeySteps.map((item, index) => {
                   const Icon = item.icon;
 
                   return (
                     <motion.div
                       key={item.title}
-                      initial={{ opacity: 0, x: 14 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true, amount: 0.2 }}
+                      initial={{
+                        opacity: 0,
+                        x: 14,
+                      }}
+                      whileInView={{
+                        opacity: 1,
+                        x: 0,
+                      }}
+                      viewport={{
+                        once: true,
+                        amount: 0.2,
+                      }}
                       transition={{
                         duration: 0.45,
                         delay: index * 0.06,
@@ -445,7 +564,7 @@ export default function HowItWorksPage() {
                         <Icon className="h-4 w-4 text-primary" />
                       </div>
 
-                      <div className="rounded-2xl border border-border bg-background p-4 sm:p-5">
+                      <div className="min-w-0 rounded-2xl border border-border bg-background p-4 sm:p-5">
                         <p className="text-sm font-semibold text-foreground">
                           {item.title}
                         </p>
@@ -464,13 +583,16 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* CTA                                                                 */}
+      {/* CTA                                                                */}
       {/* ------------------------------------------------------------------ */}
 
       <section className="bg-background">
         <div className="mx-auto w-full max-w-7xl px-5 pb-20 sm:px-8 sm:pb-24 lg:px-12 lg:pb-28">
           <div className="relative overflow-hidden rounded-[2rem] bg-[#111827] px-6 py-12 text-white sm:px-10 sm:py-14 lg:px-14 lg:py-16">
-            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+            <div
+              aria-hidden="true"
+              className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl"
+            />
 
             <div className="relative grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end lg:gap-16">
               <div className="max-w-2xl">
@@ -491,7 +613,7 @@ export default function HowItWorksPage() {
               <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
                 <Link
                   href="/demo"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 focus:ring-offset-[#111827]"
                 >
                   Explore demo
                   <ArrowRight className="h-4 w-4" />
@@ -499,7 +621,7 @@ export default function HowItWorksPage() {
 
                 <Link
                   href="/get-started"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-5 text-sm font-semibold text-white transition-colors hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/20"
                 >
                   Get LeadFlow
                   <ArrowUpRight className="h-4 w-4" />
@@ -511,10 +633,10 @@ export default function HowItWorksPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* FOOTER                                                              */}
+      {/* FOOTER                                                             */}
       {/* ------------------------------------------------------------------ */}
 
-      <SiteFooter/>
+      <SiteFooter />
     </main>
   );
 }
