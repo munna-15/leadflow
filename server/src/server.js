@@ -1,7 +1,9 @@
+
 import dns from "node:dns";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createServer } from "node:http";
+
 import dotenv from "dotenv";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -19,12 +21,15 @@ const { initializeSocket } = await import("./realtime/socket.js");
 const { startNotificationScheduler } =
   await import("./services/notification.scheduler.js");
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = "0.0.0.0";
 
 const startServer = async () => {
   try {
     if (!process.env.PLATFORM_OWNER_EMAIL) {
-      console.warn("Warning: PLATFORM_OWNER_EMAIL is not configured.");
+      console.warn(
+        "Warning: PLATFORM_OWNER_EMAIL is not configured.",
+      );
     }
 
     await connectDatabase();
@@ -33,16 +38,18 @@ const startServer = async () => {
 
     initializeSocket(httpServer);
 
-    httpServer.listen(PORT, () => {
-      console.log(`LeadFlow API running on port ${PORT}`);
+    httpServer.listen(PORT, HOST, () => {
+      console.log(
+        `LeadFlow API running on http://${HOST}:${PORT}`,
+      );
     });
 
     startNotificationScheduler();
   } catch (error) {
     console.error("Server startup failed:", error);
-
     process.exit(1);
   }
 };
 
 startServer();
+
