@@ -17,6 +17,8 @@ import avatarRoutes from "./routes/avatar.routes.js";
 import teamRoutes from "./routes/team.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import platformRoutes from "./routes/platform.routes.js";
+import getStartedRoutes from "./routes/getStarted.routes.js";
+
 
 
 
@@ -56,6 +58,8 @@ app.use("/api/auth/avatar", avatarRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/platform", platformRoutes);
+app.use("/api/get-started", getStartedRoutes);
+
 
 
 app.use(errorHandler);

@@ -1,20 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+
 import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
+
+import {
+  AlertCircle,
   ArrowRight,
   CheckCircle2,
   ChevronDown,
+  Loader2,
   Mail,
   MessageSquareText,
   Send,
   Sparkles,
 } from "lucide-react";
+
 import { motion } from "motion/react";
 
 import SiteNavbar from "@/components/layout/SiteNavbar";
 import SiteFooter from "@/components/home/SiteFooter";
+
+import { submitGetStartedRequest } from "@/services/getStarted.service";
 
 const businessTypes = [
   "Real estate",
@@ -73,16 +86,28 @@ const steps = [
   },
 ];
 
+const initialForm = {
+  name: "",
+  businessName: "",
+  email: "",
+  businessType: "",
+  website: "",
+  teamSize: "",
+  leadVolume: "",
+  message: "",
+};
+
 function FieldLabel({
   children,
   required = false,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   required?: boolean;
 }) {
   return (
     <label className="mb-2 block text-sm font-semibold text-foreground">
       {children}
+
       {required && <span className="ml-1 text-primary">*</span>}
     </label>
   );
@@ -120,27 +145,71 @@ function SelectField({
   );
 }
 
+function getRequestErrorMessage(error: unknown) {
+  if (error && typeof error === "object" && "response" in error) {
+    const response = (
+      error as {
+        response?: {
+          data?: {
+            message?: unknown;
+          };
+        };
+      }
+    ).response;
+
+    const message = response?.data?.message;
+
+    if (typeof message === "string" && message.trim()) {
+      return message;
+    }
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return "We couldn't submit your request right now. Please try again.";
+}
+
 export default function GetStartedPage() {
   const [submitted, setSubmitted] = useState(false);
 
-  const [form, setForm] = useState({
-    name: "",
-    businessName: "",
-    email: "",
-    businessType: "",
-    website: "",
-    teamSize: "",
-    leadVolume: "",
-    message: "",
-  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [error, setError] = useState<string | null>(null);
+
+  const [form, setForm] = useState(initialForm);
 
   const [selectedNeeds, setSelectedNeeds] = useState<string[]>([]);
+
+  const successRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!submitted) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      successRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [submitted]);
 
   const updateField = (field: keyof typeof form, value: string) => {
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
+
+    if (error) {
+      setError(null);
+    }
   };
 
   const toggleNeed = (need: string) => {
@@ -149,11 +218,46 @@ export default function GetStartedPage() {
         ? current.filter((item) => item !== need)
         : [...current, need],
     );
+
+    if (error) {
+      setError(null);
+    }
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSubmitted(true);
+
+    if (isSubmitting) {
+      return;
+    }
+
+    setError(null);
+
+    const payload = {
+      name: form.name.trim(),
+      businessName: form.businessName.trim(),
+      email: form.email.trim().toLowerCase(),
+      businessType: form.businessType.trim(),
+      website: form.website.trim(),
+      teamSize: form.teamSize.trim(),
+      leadVolume: form.leadVolume.trim(),
+      needs: selectedNeeds,
+      message: form.message.trim(),
+    };
+
+    try {
+      setIsSubmitting(true);
+
+      await submitGetStartedRequest(payload);
+
+      setForm(initialForm);
+      setSelectedNeeds([]);
+      setSubmitted(true);
+    } catch (requestError) {
+      setError(getRequestErrorMessage(requestError));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -166,9 +270,17 @@ export default function GetStartedPage() {
         <div className="mx-auto max-w-7xl px-5 pb-16 pt-16 sm:px-6 sm:pb-20 sm:pt-20 lg:px-8 lg:pb-24 lg:pt-24">
           <div className="mx-auto max-w-4xl text-center">
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              initial={{
+                opacity: 0,
+                y: 12,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.5,
+              }}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-3.5 py-1.5 text-xs font-semibold text-muted shadow-sm"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -176,9 +288,18 @@ export default function GetStartedPage() {
             </motion.div>
 
             <motion.h1
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.55, delay: 0.05 }}
+              initial={{
+                opacity: 0,
+                y: 16,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.55,
+                delay: 0.05,
+              }}
               className="mx-auto mt-7 max-w-5xl text-5xl font-semibold leading-[1.02] tracking-[-0.055em] text-foreground sm:text-6xl lg:text-7xl xl:text-[5.5rem]"
             >
               Let&apos;s build a clearer way to{" "}
@@ -188,9 +309,18 @@ export default function GetStartedPage() {
             </motion.h1>
 
             <motion.p
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.12 }}
+              initial={{
+                opacity: 0,
+                y: 14,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                duration: 0.5,
+                delay: 0.12,
+              }}
               className="mx-auto mt-7 max-w-2xl text-base leading-7 text-muted sm:text-lg sm:leading-8"
             >
               Tell us how your business currently handles leads, follow-ups and
@@ -204,10 +334,21 @@ export default function GetStartedPage() {
       <section className="mx-auto max-w-7xl px-5 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
         <div className="grid gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
           <motion.aside
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.55 }}
+            initial={{
+              opacity: 0,
+              x: -20,
+            }}
+            whileInView={{
+              opacity: 1,
+              x: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.2,
+            }}
+            transition={{
+              duration: 0.55,
+            }}
             className="lg:sticky lg:top-28"
           >
             <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
@@ -263,14 +404,28 @@ export default function GetStartedPage() {
           </motion.aside>
 
           <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.15 }}
-            transition={{ duration: 0.6 }}
+            initial={{
+              opacity: 0,
+              y: 24,
+            }}
+            whileInView={{
+              opacity: 1,
+              y: 0,
+            }}
+            viewport={{
+              once: true,
+              amount: 0.15,
+            }}
+            transition={{
+              duration: 0.6,
+            }}
             className="rounded-[1.5rem] border border-border bg-white p-6 shadow-[0_30px_80px_-55px_rgba(15,23,42,0.45)] sm:p-8 lg:p-10"
           >
             {submitted ? (
-              <div className="flex min-h-[38rem] flex-col items-center justify-center text-center">
+              <div
+                ref={successRef}
+                className="flex min-h-[38rem] scroll-mt-24 flex-col items-center justify-center text-center"
+              >
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-50 text-green-600">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
@@ -412,6 +567,7 @@ export default function GetStartedPage() {
                           key={need}
                           type="button"
                           onClick={() => toggleNeed(need)}
+                          aria-pressed={selected}
                           className={`flex min-h-12 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left text-sm font-medium transition ${
                             selected
                               ? "border-primary/40 bg-primary-soft text-primary-dark"
@@ -444,6 +600,17 @@ export default function GetStartedPage() {
                   />
                 </div>
 
+                {error && (
+                  <div
+                    role="alert"
+                    className="mt-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3.5 text-sm text-red-700"
+                  >
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+
+                    <p className="leading-6">{error}</p>
+                  </div>
+                )}
+
                 <div className="mt-8 flex flex-col gap-4 border-t border-border pt-7 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-2.5">
                     <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted" />
@@ -456,10 +623,21 @@ export default function GetStartedPage() {
 
                   <button
                     type="submit"
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(14,165,233,0.6)] transition hover:bg-primary-dark"
+                    disabled={isSubmitting}
+                    aria-busy={isSubmitting}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3.5 text-sm font-semibold text-white shadow-[0_12px_35px_-12px_rgba(14,165,233,0.6)] transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Request a consultation
-                    <Send className="h-4 w-4" />
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sending request...
+                      </>
+                    ) : (
+                      <>
+                        Request a consultation
+                        <Send className="h-4 w-4" />
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
