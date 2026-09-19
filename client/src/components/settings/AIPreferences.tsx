@@ -106,11 +106,13 @@ export default function AIPreferences() {
   const [settings, setSettings] = useState<AIPreferencesData | null>(null);
 
   const [loading, setLoading] = useState(true);
+
   const [savingKey, setSavingKey] = useState<
     AIPreferenceKey | "scoringMode" | null
   >(null);
 
   const [error, setError] = useState<string | null>(null);
+
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -268,15 +270,15 @@ export default function AIPreferences() {
   };
 
   return (
-    <section className="mt-6 overflow-hidden rounded-3xl border border-border/80 bg-surface shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
-      {/* ------------------------------------------------------------------ */}
-      {/* HEADER                                                             */}
-      {/* ------------------------------------------------------------------ */}
-
+    <section
+      className="mt-6 overflow-hidden rounded-3xl border border-border/80 bg-surface shadow-[0_8px_30px_rgba(15,23,42,0.04)]"
+      aria-labelledby="ai-preferences-title"
+    >
+      {/* Header */}
       <div className="border-b border-border/70 px-6 py-6 sm:px-7 sm:py-7">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-            <BrainCircuit className="h-4 w-4" />
+            <BrainCircuit className="h-4 w-4" aria-hidden="true" />
           </div>
 
           <div className="min-w-0">
@@ -284,7 +286,10 @@ export default function AIPreferences() {
               Intelligence
             </p>
 
-            <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            <h2
+              id="ai-preferences-title"
+              className="mt-1 text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+            >
               AI preferences
             </h2>
 
@@ -296,10 +301,7 @@ export default function AIPreferences() {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* STABLE FEEDBACK AREA                                               */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Feedback */}
       <div className="min-h-[68px] border-b border-border/70 px-6 py-3 sm:px-7">
         <div className="flex min-h-[42px] items-center">
           {error ? (
@@ -321,105 +323,122 @@ export default function AIPreferences() {
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* AI FEATURES                                                        */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* AI Features */}
       <div className="divide-y divide-border/70">
-        {loading
-          ? aiFeatures.map((feature) => (
+        {loading ? (
+          aiFeatures.map((feature) => (
+            <div
+              key={feature.key}
+              className="flex min-h-[104px] flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7"
+            >
+              <div className="flex min-w-0 items-start gap-4">
+                <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-background" />
+
+                <div className="min-w-0 flex-1">
+                  <div className="h-4 w-48 animate-pulse rounded bg-background" />
+
+                  <div className="mt-2 h-3 w-full max-w-xl animate-pulse rounded bg-background" />
+
+                  <div className="mt-1.5 h-3 w-3/4 max-w-md animate-pulse rounded bg-background" />
+                </div>
+              </div>
+
+              <div className="h-7 w-12 shrink-0 animate-pulse rounded-full bg-background" />
+            </div>
+          ))
+        ) : settings ? (
+          aiFeatures.map((feature) => {
+            const Icon = feature.icon;
+            const enabled = settings[feature.key];
+            const saving = savingKey === feature.key;
+
+            return (
               <div
                 key={feature.key}
-                className="flex min-h-[104px] flex-col gap-5 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-7"
+                className="flex min-h-[104px] flex-col gap-5 px-6 py-5 transition-colors duration-200 hover:bg-background/60 sm:flex-row sm:items-center sm:justify-between sm:px-7"
               >
                 <div className="flex min-w-0 items-start gap-4">
-                  <div className="h-11 w-11 shrink-0 animate-pulse rounded-xl bg-background" />
+                  <div
+                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors ${
+                      enabled
+                        ? "bg-primary-soft text-primary"
+                        : "bg-background text-muted"
+                    }`}
+                  >
+                    <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                  </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="h-4 w-48 animate-pulse rounded bg-background" />
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-sm font-semibold text-foreground">
+                        {feature.label}
+                      </h3>
 
-                    <div className="mt-2 h-3 w-full max-w-xl animate-pulse rounded bg-background" />
+                      {enabled && (
+                        <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+                          Active
+                        </span>
+                      )}
+                    </div>
 
-                    <div className="mt-1.5 h-3 w-3/4 max-w-md animate-pulse rounded bg-background" />
+                    <p className="mt-1 max-w-2xl text-sm leading-5 text-muted">
+                      {feature.description}
+                    </p>
                   </div>
                 </div>
 
-                <div className="h-7 w-12 shrink-0 animate-pulse rounded-full bg-background" />
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label={`${
+                    enabled ? "Disable" : "Enable"
+                  } ${feature.label}`}
+                  disabled={savingKey !== null}
+                  onClick={() => handleFeatureToggle(feature.key)}
+                  className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full p-1 outline-none transition-colors duration-200 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 ${
+                    enabled ? "bg-primary" : "bg-slate-200"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`block h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ${
+                      enabled ? "translate-x-5" : "translate-x-0"
+                    }`}
+                  />
+
+                  {saving && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />
+                    </span>
+                  )}
+                </button>
               </div>
-            ))
-          : settings
-            ? aiFeatures.map((feature) => {
-                const Icon = feature.icon;
-                const enabled = settings[feature.key];
-                const saving = savingKey === feature.key;
+            );
+          })
+        ) : (
+          <div className="px-6 py-12 text-center sm:px-7">
+            <BrainCircuit
+              className="mx-auto h-6 w-6 text-muted"
+              aria-hidden="true"
+            />
 
-                return (
-                  <div
-                    key={feature.key}
-                    className="flex min-h-[104px] flex-col gap-5 px-6 py-5 transition-colors duration-200 hover:bg-background/60 sm:flex-row sm:items-center sm:justify-between sm:px-7"
-                  >
-                    <div className="flex min-w-0 items-start gap-4">
-                      <div
-                        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                          enabled
-                            ? "bg-primary-soft text-primary"
-                            : "bg-background text-muted"
-                        }`}
-                      >
-                        <Icon className="h-[18px] w-[18px]" />
-                      </div>
+            <p className="mt-3 text-sm font-semibold text-foreground">
+              AI preferences unavailable
+            </p>
 
-                      <div className="min-w-0">
-                        <h3 className="text-sm font-semibold text-foreground">
-                          {feature.label}
-                        </h3>
-
-                        <p className="mt-1 max-w-2xl text-sm leading-5 text-muted">
-                          {feature.description}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={enabled}
-                      aria-label={`${enabled ? "Disable" : "Enable"} ${
-                        feature.label
-                      }`}
-                      disabled={savingKey !== null}
-                      onClick={() => handleFeatureToggle(feature.key)}
-                      className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full p-1 outline-none transition-colors duration-200 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-60 ${
-                        enabled ? "bg-primary" : "bg-slate-200"
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`block h-5 w-5 rounded-full bg-white shadow-sm ring-1 ring-black/5 transition-transform duration-200 ${
-                          enabled ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-
-                      {saving && (
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                );
-              })
-            : null}
+            <p className="mt-1 text-sm text-muted">
+              We could not load your AI preferences.
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* SCORING MODE                                                       */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Scoring Mode */}
       <div className="border-t border-border/70 px-6 py-6 sm:px-7">
         <div className="flex items-start gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-            <Gauge className="h-4 w-4" />
+            <Gauge className="h-4 w-4" aria-hidden="true" />
           </div>
 
           <div className="min-w-0">
@@ -435,75 +454,83 @@ export default function AIPreferences() {
         </div>
 
         <div className="mt-5 grid gap-3 md:grid-cols-3">
-          {loading
-            ? scoringOptions.map((option) => (
-                <div
+          {loading ? (
+            scoringOptions.map((option) => (
+              <div
+                key={option.value}
+                className="min-h-[122px] animate-pulse rounded-2xl border border-border/70 bg-background p-4"
+              >
+                <div className="h-4 w-24 rounded bg-surface" />
+
+                <div className="mt-3 h-3 w-full rounded bg-surface" />
+
+                <div className="mt-1.5 h-3 w-4/5 rounded bg-surface" />
+              </div>
+            ))
+          ) : settings ? (
+            scoringOptions.map((option) => {
+              const selected = option.value === settings.scoringMode;
+
+              const saving = savingKey === "scoringMode";
+
+              return (
+                <button
                   key={option.value}
-                  className="min-h-[122px] animate-pulse rounded-2xl border border-border/70 bg-background p-4"
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={savingKey !== null}
+                  onClick={() => handleScoringModeChange(option.value)}
+                  className={`group relative min-h-[122px] rounded-2xl border p-4 text-left outline-none transition-all duration-200 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-70 ${
+                    selected
+                      ? "border-primary bg-primary-soft/40 shadow-sm"
+                      : "border-border/70 bg-surface hover:border-primary/25 hover:bg-background/70"
+                  }`}
                 >
-                  <div className="h-4 w-24 rounded bg-surface" />
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-semibold text-foreground">
+                      {option.label}
+                    </span>
 
-                  <div className="mt-3 h-3 w-full rounded bg-surface" />
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ${
+                        selected
+                          ? "border-primary bg-primary"
+                          : "border-border bg-surface group-hover:border-primary/40"
+                      }`}
+                    >
+                      {selected && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-white" />
+                      )}
+                    </span>
+                  </div>
 
-                  <div className="mt-1.5 h-3 w-4/5 rounded bg-surface" />
-                </div>
-              ))
-            : settings &&
-              scoringOptions.map((option) => {
-                const selected = option.value === settings.scoringMode;
+                  <p className="mt-2 text-xs leading-5 text-muted">
+                    {option.description}
+                  </p>
 
-                const saving = savingKey === "scoringMode";
+                  {saving && selected && (
+                    <span className="absolute bottom-3 right-3">
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <div className="rounded-2xl border border-border/70 bg-background px-4 py-8 text-center md:col-span-3">
+              <p className="text-sm font-semibold text-foreground">
+                Scoring preferences unavailable
+              </p>
 
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    aria-pressed={selected}
-                    disabled={savingKey !== null}
-                    onClick={() => handleScoringModeChange(option.value)}
-                    className={`group relative min-h-[122px] rounded-2xl border p-4 text-left outline-none transition-all duration-200 focus:ring-4 focus:ring-primary/10 disabled:cursor-not-allowed disabled:opacity-70 ${
-                      selected
-                        ? "border-primary bg-primary-soft/40 shadow-sm"
-                        : "border-border/70 bg-surface hover:border-primary/25 hover:bg-background/70"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-semibold text-foreground">
-                        {option.label}
-                      </span>
-
-                      <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors duration-200 ${
-                          selected
-                            ? "border-primary bg-primary"
-                            : "border-border bg-surface group-hover:border-primary/40"
-                        }`}
-                      >
-                        {selected && (
-                          <span className="h-1.5 w-1.5 rounded-full bg-white" />
-                        )}
-                      </span>
-                    </div>
-
-                    <p className="mt-2 text-xs leading-5 text-muted">
-                      {option.description}
-                    </p>
-
-                    {saving && selected && (
-                      <span className="absolute bottom-3 right-3">
-                        <LoaderCircle className="h-3.5 w-3.5 animate-spin text-primary" />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+              <p className="mt-1 text-sm text-muted">
+                Lead scoring options could not be loaded.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* FOOTER                                                             */}
-      {/* ------------------------------------------------------------------ */}
-
+      {/* Footer */}
       <div className="border-t border-border/70 bg-background/50 px-6 py-4 sm:px-7">
         <p className="text-xs leading-5 text-muted">
           AI recommendations are decision-support signals. Your team remains

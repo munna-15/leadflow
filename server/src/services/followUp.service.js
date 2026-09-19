@@ -2,9 +2,12 @@ import mongoose from "mongoose";
 
 import FollowUp from "../models/followUp.model.js";
 import Lead from "../models/lead.model.js";
+import User from "../models/user.model.js";
+
 import AppError from "../utils/AppError.js";
 
 import { createActivity } from "./activity.service.js";
+import { createNotification } from "./notification.service.js";
 
 const CREATEABLE_FIELDS = ["lead", "type", "scheduledAt", "notes"];
 
@@ -32,7 +35,7 @@ const validateLeadOwnership = async (leadId, businessId) => {
   const lead = await Lead.findOne({
     _id: leadId,
     businessId,
-  }).select("_id name");
+  }).select("_id name assignedTo");
 
   if (!lead) {
     throw new AppError("Lead does not belong to this business", 400);
@@ -49,6 +52,25 @@ const normalizeDate = (value) => {
   }
 
   return date;
+};
+
+const getChannelLabel = (type) => {
+  switch (type) {
+    case "call":
+      return "Call";
+
+    case "message":
+      return "Message";
+
+    case "email":
+      return "Email";
+
+    case "meeting":
+      return "Meeting";
+
+    default:
+      return "Follow-up";
+  }
 };
 
 const recordActivity = async ({
@@ -78,6 +100,68 @@ const recordActivity = async ({
   }
 };
 
+const recordNotification = async ({
+  businessId,
+  recipientId,
+  type,
+  title,
+  description,
+  entity,
+  action,
+}) => {
+  if (!recipientId) {
+    return;
+  }
+
+  try {
+    await createNotification({
+      businessId,
+      recipientId,
+      type,
+      title,
+      description,
+      entity,
+      action,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to create notification "${type}" for recipient ${recipientId}:`,
+      error,
+    );
+  }
+};
+
+const findBusinessOwnerId = async (businessId) => {
+  const owner = await User.findOne({
+    businessId,
+    role: "owner",
+    isActive: true,
+  }).select("_id");
+
+  return owner?._id ?? null;
+};
+
+const resolveNotificationRecipient = async ({
+  businessId,
+  actorId = null,
+  lead = null,
+}) => {
+  if (actorId) {
+    return actorId;
+  }
+
+  if (lead?.assignedTo) {
+    return lead.assignedTo;
+  }
+
+  return findBusinessOwnerId(businessId);
+};
+
+const getFollowUpAction = (label, followUpId) => ({
+  label,
+  href: `/dashboard/follow-ups/${followUpId}`,
+});
+
 export const createFollowUp = async (data, businessId, actorId = null) => {
   const followUpData = pickAllowedFields(data, CREATEABLE_FIELDS);
 
@@ -96,13 +180,36 @@ export const createFollowUp = async (data, businessId, actorId = null) => {
     actorId,
     type: "follow_up_scheduled",
     title: "Follow-up scheduled",
-    description: `${getChannelLabel(followUp.type)} follow-up scheduled for ${lead.name}.`,
+    description: `${getChannelLabel(
+      followUp.type,
+    )} follow-up scheduled for ${lead.name}.`,
     metadata: {
       followUpId: followUp._id,
       followUpType: followUp.type,
       scheduledAt: followUp.scheduledAt,
     },
   });
+
+  if (followUp.type === "meeting") {
+    const recipientId = await resolveNotificationRecipient({
+      businessId,
+      actorId,
+      lead,
+    });
+
+    await recordNotification({
+      businessId,
+      recipientId,
+      type: "meeting",
+      title: `Meeting scheduled with ${lead.name}`,
+      description: `A meeting has been scheduled for ${lead.name}. Review the meeting details and confirm the appointment.`,
+      entity: {
+        type: "meeting",
+        id: followUp._id,
+      },
+      action: getFollowUpAction("View meeting", followUp._id),
+    });
+  }
 
   return FollowUp.findById(followUp._id).populate(
     "lead",
@@ -180,28 +287,57 @@ export const updateFollowUp = async (
 
   const previousType = followUp.type;
 
-  if (Object.prototype.hasOwnProperty.call(updateData, "scheduledAt")) {
+  const hasScheduledAtField = Object.prototype.hasOwnProperty.call(
+    updateData,
+    "scheduledAt",
+  );
+
+  const hasStatusField = Object.prototype.hasOwnProperty.call(
+    updateData,
+    "status",
+  );
+
+  if (hasScheduledAtField) {
     updateData.scheduledAt = normalizeDate(updateData.scheduledAt);
   }
 
-  if (Object.prototype.hasOwnProperty.call(updateData, "status")) {
+  if (hasStatusField) {
     if (updateData.status === "completed") {
       updateData.completedAt = new Date();
-    }
-
-    if (updateData.status !== "completed") {
+    } else {
       updateData.completedAt = null;
     }
   }
 
+  const hasScheduledAtValueChanged =
+    hasScheduledAtField &&
+    previousScheduledAt !== new Date(updateData.scheduledAt).getTime();
+
+  const hasStatusValueChanged =
+    hasStatusField && previousStatus !== updateData.status;
+
+  const shouldResetOverdueMarker =
+    (hasScheduledAtValueChanged &&
+      updateData.status !== "completed" &&
+      updateData.status !== "cancelled") ||
+    hasStatusValueChanged;
+
   Object.assign(followUp, updateData);
+
+  if (shouldResetOverdueMarker) {
+    followUp.overdueNotificationSentAt = null;
+  }
+
+  if (followUp.status === "completed" || followUp.status === "cancelled") {
+    followUp.overdueNotificationSentAt = null;
+  }
 
   await followUp.save();
 
   const lead = await Lead.findOne({
     _id: followUp.lead,
     businessId,
-  }).select("_id name");
+  }).select("_id name assignedTo");
 
   if (!lead) {
     throw new AppError("Lead does not belong to this business", 400);
@@ -230,13 +366,36 @@ export const updateFollowUp = async (
       actorId,
       type: "follow_up_completed",
       title: "Follow-up completed",
-      description: `${lead.name}'s ${getChannelLabel(followUp.type)} follow-up was completed.`,
+      description: `${lead.name}'s ${getChannelLabel(
+        followUp.type,
+      )} follow-up was completed.`,
       metadata: {
         followUpId: followUp._id,
         followUpType: followUp.type,
         previousStatus,
         completedAt: followUp.completedAt,
       },
+    });
+
+    const recipientId = await resolveNotificationRecipient({
+      businessId,
+      actorId,
+      lead,
+    });
+
+    await recordNotification({
+      businessId,
+      recipientId,
+      type: "completed",
+      title: "Follow-up completed",
+      description: `${lead.name}'s ${getChannelLabel(
+        followUp.type,
+      )} follow-up was marked as completed.`,
+      entity: {
+        type: "follow-up",
+        id: followUp._id,
+      },
+      action: getFollowUpAction("View follow-up", followUp._id),
     });
   } else if (statusChanged && followUp.status === "cancelled") {
     await recordActivity({
@@ -245,7 +404,9 @@ export const updateFollowUp = async (
       actorId,
       type: "follow_up_cancelled",
       title: "Follow-up cancelled",
-      description: `${lead.name}'s scheduled ${getChannelLabel(followUp.type)} follow-up was cancelled.`,
+      description: `${lead.name}'s scheduled ${getChannelLabel(
+        followUp.type,
+      )} follow-up was cancelled.`,
       metadata: {
         followUpId: followUp._id,
         followUpType: followUp.type,
@@ -259,14 +420,39 @@ export const updateFollowUp = async (
       actorId,
       type: "follow_up_rescheduled",
       title: "Follow-up rescheduled",
-      description: `${lead.name}'s ${getChannelLabel(followUp.type)} follow-up was rescheduled.`,
+      description: `${lead.name}'s ${getChannelLabel(
+        followUp.type,
+      )} follow-up was rescheduled.`,
       metadata: {
         followUpId: followUp._id,
         followUpType: followUp.type,
-        previousScheduledAt: new Date(previousScheduledAt),
+        previousScheduledAt: previousScheduledAt
+          ? new Date(previousScheduledAt)
+          : null,
         scheduledAt: followUp.scheduledAt,
       },
     });
+
+    if (followUp.type === "meeting") {
+      const recipientId = await resolveNotificationRecipient({
+        businessId,
+        actorId,
+        lead,
+      });
+
+      await recordNotification({
+        businessId,
+        recipientId,
+        type: "meeting",
+        title: `Meeting rescheduled with ${lead.name}`,
+        description: `The meeting with ${lead.name} has been rescheduled. Review the updated appointment time.`,
+        entity: {
+          type: "meeting",
+          id: followUp._id,
+        },
+        action: getFollowUpAction("View meeting", followUp._id),
+      });
+    }
   } else if (typeChanged) {
     await recordActivity({
       businessId,
@@ -274,13 +460,36 @@ export const updateFollowUp = async (
       actorId,
       type: "follow_up_rescheduled",
       title: "Follow-up updated",
-      description: `${lead.name}'s follow-up channel was changed from ${getChannelLabel(previousType)} to ${getChannelLabel(followUp.type)}.`,
+      description: `${lead.name}'s follow-up channel was changed from ${getChannelLabel(
+        previousType,
+      )} to ${getChannelLabel(followUp.type)}.`,
       metadata: {
         followUpId: followUp._id,
         previousType,
         followUpType: followUp.type,
       },
     });
+
+    if (followUp.type === "meeting") {
+      const recipientId = await resolveNotificationRecipient({
+        businessId,
+        actorId,
+        lead,
+      });
+
+      await recordNotification({
+        businessId,
+        recipientId,
+        type: "meeting",
+        title: `Meeting scheduled with ${lead.name}`,
+        description: `This follow-up is now a meeting with ${lead.name}. Review the appointment details.`,
+        entity: {
+          type: "meeting",
+          id: followUp._id,
+        },
+        action: getFollowUpAction("View meeting", followUp._id),
+      });
+    }
   }
 
   return FollowUp.findById(followUp._id).populate(
@@ -302,23 +511,4 @@ export const deleteFollowUp = async (followUpId, businessId) => {
   }
 
   return followUp;
-};
-
-const getChannelLabel = (type) => {
-  switch (type) {
-    case "call":
-      return "Call";
-
-    case "message":
-      return "Message";
-
-    case "email":
-      return "Email";
-
-    case "meeting":
-      return "Meeting";
-
-    default:
-      return "Follow-up";
-  }
 };

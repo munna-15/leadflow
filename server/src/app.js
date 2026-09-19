@@ -15,7 +15,7 @@ import aiNextActionRoutes from "./routes/aiNextAction.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import teamRoutes from "./routes/team.routes.js";
-
+import notificationRoutes from "./routes/notification.routes.js";
 
 import errorHandler from "./middleware/error.middleware.js";
 
@@ -50,6 +50,9 @@ app.use("/api", aiNextActionRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/auth/avatar", avatarRoutes);
 app.use("/api/team", teamRoutes);
+app.use("/api/notifications", notificationRoutes);
+
+
 
 app.use(errorHandler);
 

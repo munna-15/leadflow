@@ -46,6 +46,12 @@ const followUpSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+
+    overdueNotificationSentAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
   },
   {
     timestamps: true,
@@ -66,6 +72,12 @@ followUpSchema.index({
   businessId: 1,
   lead: 1,
   scheduledAt: 1,
+});
+
+followUpSchema.index({
+  status: 1,
+  scheduledAt: 1,
+  overdueNotificationSentAt: 1,
 });
 
 const FollowUp = mongoose.model("FollowUp", followUpSchema);

@@ -1,15 +1,13 @@
 import mongoose from "mongoose";
 
 import Lead from "../models/lead.model.js";
-
 import User from "../models/user.model.js";
 
 import AppError from "../utils/AppError.js";
 
 import { createActivity } from "./activity.service.js";
-
+import { createNotification } from "./notification.service.js";
 import { qualifyLeadWithAI as runAIQualification } from "./aiQualification.service.js";
-
 
 const CREATEABLE_FIELDS = [
   "name",
@@ -180,6 +178,52 @@ const recordActivity = async ({
   }
 };
 
+const recordNotification = async ({
+  businessId,
+  recipientId,
+  type,
+  title,
+  description,
+  entity,
+  action,
+}) => {
+  if (!recipientId) {
+    return;
+  }
+
+  try {
+    await createNotification({
+      businessId,
+      recipientId,
+      type,
+      title,
+      description,
+      entity,
+      action,
+    });
+  } catch (error) {
+    console.error(
+      `Failed to create notification "${type}" for recipient ${recipientId}:`,
+      error,
+    );
+  }
+};
+
+const findBusinessOwnerId = async (businessId) => {
+  const owner = await User.findOne({
+    businessId,
+    role: "owner",
+    isActive: true,
+  }).select("_id");
+
+  return owner?._id ?? null;
+};
+
+const getLeadAction = (label, href) => ({
+  label,
+  href,
+});
+
 export const createLead = async (data, businessId, actorId = null) => {
   const leadData = pickAllowedFields(data, CREATEABLE_FIELDS);
 
@@ -234,6 +278,29 @@ export const createLead = async (data, businessId, actorId = null) => {
     });
   }
 
+  let notificationRecipientId = assignedUser?._id ?? actorId;
+
+  if (!notificationRecipientId) {
+    notificationRecipientId = await findBusinessOwnerId(businessId);
+  }
+
+  await recordNotification({
+    businessId,
+    recipientId: notificationRecipientId,
+    type: "assigned",
+    title: assignedUser
+      ? `New lead assigned to ${assignedUser.name}`
+      : "New lead captured",
+    description: assignedUser
+      ? `${lead.name} has been added to your sales queue and is ready for qualification.`
+      : `${lead.name} was added to the lead pipeline and is waiting for follow-up.`,
+    entity: {
+      type: "lead",
+      id: lead._id,
+    },
+    action: getLeadAction("View lead", `/dashboard/leads/${lead._id}`),
+  });
+
   return lead;
 };
 
@@ -283,9 +350,7 @@ export const updateLead = async (leadId, data, businessId, actorId = null) => {
   const updateData = pickAllowedFields(data, UPDATABLE_FIELDS);
 
   const previousStatus = lead.status;
-
   const previousTemperature = lead.temperature;
-
   const previousAssignedTo = lead.assignedTo
     ? lead.assignedTo.toString()
     : null;
@@ -363,6 +428,19 @@ export const updateLead = async (leadId, data, businessId, actorId = null) => {
           previousAssignee: previousAssignedTo,
           assignedTo: assignedUser._id,
         },
+      });
+
+      await recordNotification({
+        businessId,
+        recipientId: assignedUser._id,
+        type: "assigned",
+        title: "New lead assigned to you",
+        description: `${lead.name} has been assigned to your sales queue and is waiting for your attention.`,
+        entity: {
+          type: "lead",
+          id: lead._id,
+        },
+        action: getLeadAction("View lead", `/dashboard/leads/${lead._id}`),
       });
     } else {
       await recordActivity({
@@ -459,6 +537,37 @@ export const qualifyLeadWithAI = async (
       aiQualifiedAt: lead.aiQualifiedAt,
     },
   });
+
+  const notificationRecipientId =
+    actorId ?? lead.assignedTo ?? (await findBusinessOwnerId(businessId));
+
+  await recordNotification({
+    businessId,
+    recipientId: notificationRecipientId,
+    type: "system",
+    title: "AI qualification completed",
+    description: `${lead.name} received a ${lead.score}% qualification score and ${lead.temperature} temperature.`,
+    entity: {
+      type: "lead",
+      id: lead._id,
+    },
+    action: getLeadAction("Review lead", `/dashboard/leads/${lead._id}`),
+  });
+
+  if (lead.temperature === "hot" && lead.score >= 80) {
+    await recordNotification({
+      businessId,
+      recipientId: notificationRecipientId,
+      type: "hot-lead",
+      title: `${lead.name} is a high-intent lead`,
+      description: `${lead.name} has a ${lead.score}% lead score and should be prioritized for follow-up.`,
+      entity: {
+        type: "lead",
+        id: lead._id,
+      },
+      action: getLeadAction("View lead", `/dashboard/leads/${lead._id}`),
+    });
+  }
 
   return Lead.findById(lead._id).populate(
     "assignedTo",
