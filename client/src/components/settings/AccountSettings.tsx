@@ -357,10 +357,86 @@ export default function AccountSettings() {
   if (loading) {
     return (
       <section className="mt-8 overflow-hidden rounded-3xl border border-border/80 bg-surface shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
-        <div className="flex min-h-[360px] items-center justify-center">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted">
-            <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
-            Loading account settings...
+        {/* Header Skeleton */}
+        <div className="border-b border-border/70 px-6 py-6 sm:px-7 sm:py-7">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-primary-soft" />
+
+            <div className="min-w-0 flex-1">
+              <div className="h-3 w-20 animate-pulse rounded bg-border/70" />
+
+              <div className="mt-2 h-7 w-52 animate-pulse rounded-lg bg-border/70 sm:w-64" />
+
+              <div className="mt-3 h-4 w-full max-w-2xl animate-pulse rounded bg-border/50" />
+              <div className="mt-2 h-4 w-3/4 max-w-xl animate-pulse rounded bg-border/50" />
+            </div>
+          </div>
+        </div>
+
+        {/* Body Skeleton */}
+        <div className="p-6 sm:p-7">
+          <div className="flex flex-col gap-8 lg:flex-row lg:items-start">
+            {/* Profile Skeleton */}
+            <div className="flex shrink-0 items-center gap-5 border-b border-border/70 pb-7 sm:gap-6 lg:w-56 lg:flex-col lg:border-b-0 lg:border-r lg:pb-0 lg:pr-8">
+              <div className="relative">
+                <div className="h-24 w-24 animate-pulse rounded-[26px] bg-border/60" />
+
+                <div className="absolute -bottom-2 -right-2 h-9 w-9 animate-pulse rounded-xl border border-border/70 bg-surface" />
+              </div>
+
+              <div className="min-w-0 lg:text-center">
+                <div className="h-5 w-32 animate-pulse rounded-md bg-border/60 lg:mx-auto" />
+
+                <div className="mt-2 h-6 w-28 animate-pulse rounded-full bg-primary-soft lg:mx-auto" />
+
+                <div className="mt-4 flex items-center gap-4 lg:justify-center">
+                  <div className="h-4 w-20 animate-pulse rounded bg-border/50" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-border/50" />
+                </div>
+
+                <div className="mt-2 h-3 w-32 animate-pulse rounded bg-border/40 lg:mx-auto" />
+              </div>
+            </div>
+
+            {/* Form Skeleton */}
+            <div className="grid flex-1 gap-5 md:grid-cols-2">
+              {/* Full Name */}
+              <div>
+                <div className="h-4 w-20 animate-pulse rounded bg-border/60" />
+
+                <div className="mt-2 h-11 w-full animate-pulse rounded-xl bg-border/40" />
+              </div>
+
+              {/* Email */}
+              <div>
+                <div className="h-4 w-28 animate-pulse rounded bg-border/60" />
+
+                <div className="mt-2 h-11 w-full animate-pulse rounded-xl bg-border/40" />
+              </div>
+
+              {/* Role */}
+              <div>
+                <div className="h-4 w-12 animate-pulse rounded bg-border/60" />
+
+                <div className="mt-2 h-11 w-full animate-pulse rounded-xl bg-border/40" />
+
+                <div className="mt-2 h-3 w-64 max-w-full animate-pulse rounded bg-border/30" />
+              </div>
+
+              {/* Timezone */}
+              <div>
+                <div className="h-4 w-20 animate-pulse rounded bg-border/60" />
+
+                <div className="mt-2 h-11 w-full animate-pulse rounded-xl bg-border/40" />
+
+                <div className="mt-2 h-3 w-72 max-w-full animate-pulse rounded bg-border/30" />
+              </div>
+
+              {/* Save Button */}
+              <div className="flex justify-end border-t border-border/70 pt-5 md:col-span-2">
+                <div className="h-11 w-32 animate-pulse rounded-xl bg-border/60" />
+              </div>
+            </div>
           </div>
         </div>
       </section>

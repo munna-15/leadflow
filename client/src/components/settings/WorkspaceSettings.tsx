@@ -222,10 +222,34 @@ export default function WorkspaceSettings() {
   if (loading) {
     return (
       <section className="mt-6 overflow-hidden rounded-3xl border border-border/80 bg-surface shadow-[0_8px_30px_rgba(15,23,42,0.04)]">
-        <div className="flex min-h-[360px] items-center justify-center">
-          <div className="flex items-center gap-2 text-sm font-medium text-muted">
-            <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
-            Loading workspace settings...
+        <div className="border-b border-border/70 px-6 py-6 sm:px-7 sm:py-7">
+          <div className="flex items-start gap-3">
+            <div className="h-9 w-9 shrink-0 animate-pulse rounded-xl bg-background" />
+
+            <div className="min-w-0 flex-1 space-y-3">
+              <div className="h-3 w-24 animate-pulse rounded bg-background" />
+              <div className="h-6 w-48 animate-pulse rounded bg-background" />
+              <div className="h-4 w-full max-w-2xl animate-pulse rounded bg-background" />
+              <div className="h-4 w-3/4 max-w-xl animate-pulse rounded bg-background" />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 sm:p-7">
+          <div className="grid gap-5 md:grid-cols-2">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item}>
+                <div className="h-4 w-28 animate-pulse rounded bg-background" />
+
+                <div className="mt-2 h-11 w-full animate-pulse rounded-xl bg-background" />
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-4 border-t border-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="h-4 w-full max-w-md animate-pulse rounded bg-background" />
+
+            <div className="h-11 w-32 animate-pulse rounded-xl bg-background" />
           </div>
         </div>
       </section>
