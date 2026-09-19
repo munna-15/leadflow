@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import Image from "next/image";
+
 import Link from "next/link";
+
 import { useRouter } from "next/navigation";
 
 import {
   Bell,
   ChevronDown,
-  Clock3,
   LoaderCircle,
   LogOut,
   Menu,
@@ -20,9 +21,7 @@ import {
 } from "lucide-react";
 
 import { useNotifications } from "@/components/notifications/NotificationProvider";
-
 import { getSettings } from "@/services/settings.service";
-
 import api from "@/lib/api";
 
 type DashboardHeaderProps = {
@@ -64,7 +63,7 @@ const getInitials = (name: string) => {
   const normalized = name.trim();
 
   if (!normalized) {
-    return "M";
+    return "?";
   }
 
   const parts = normalized.split(/\s+/);
@@ -236,11 +235,13 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
 
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const [userName, setUserName] = useState("Munna");
+  const [userName, setUserName] = useState("");
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [avatarError, setAvatarError] = useState(false);
+
+  const [isAccountLoading, setIsAccountLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -258,20 +259,28 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
 
   const searchRef = useRef<HTMLDivElement>(null);
 
+  /* ---------------------------------------------------------------------- */
+  /* LOAD AUTHENTICATED ACCOUNT                                             */
+  /* ---------------------------------------------------------------------- */
+
   useEffect(() => {
     let mounted = true;
 
     const loadAccountSettings = async () => {
       try {
+        setIsAccountLoading(true);
+
         const settings = await getSettings();
 
         if (!mounted) {
           return;
         }
 
-        setUserName(settings.account.name || "Munna");
+        const accountName = settings.account?.name?.trim() || "";
 
-        setAvatarUrl(settings.account.avatar || null);
+        setUserName(accountName);
+
+        setAvatarUrl(settings.account?.avatar || null);
 
         setAvatarError(false);
       } catch (error) {
@@ -279,6 +288,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
           "Failed to load account settings for dashboard header:",
           error,
         );
+      } finally {
+        if (mounted) {
+          setIsAccountLoading(false);
+        }
       }
     };
 
@@ -288,6 +301,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
       mounted = false;
     };
   }, []);
+
+  /* ---------------------------------------------------------------------- */
+  /* CLOSE DROPDOWNS ON OUTSIDE CLICK                                       */
+  /* ---------------------------------------------------------------------- */
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -309,6 +326,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
     };
   }, []);
 
+  /* ---------------------------------------------------------------------- */
+  /* ESCAPE HANDLER                                                         */
+  /* ---------------------------------------------------------------------- */
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") {
@@ -327,6 +348,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
     };
   }, []);
 
+  /* ---------------------------------------------------------------------- */
+  /* LEAD SEARCH                                                             */
+  /* ---------------------------------------------------------------------- */
+
   useEffect(() => {
     const query = searchQuery.trim();
 
@@ -334,6 +359,7 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
       setSearchResults([]);
       setIsSearching(false);
       setSearchError(null);
+
       return;
     }
 
@@ -401,6 +427,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
     setIsMobileSearchOpen(false);
   };
 
+  /* ---------------------------------------------------------------------- */
+  /* LOGOUT                                                                  */
+  /* ---------------------------------------------------------------------- */
+
   const handleLogout = async () => {
     if (isLoggingOut) {
       return;
@@ -417,14 +447,22 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
       console.error("Logout request failed:", error);
     } finally {
       setIsProfileOpen(false);
+
       router.push("/auth/login");
       router.refresh();
+
       setIsLoggingOut(false);
     }
   };
 
+  /* ---------------------------------------------------------------------- */
+  /* DERIVED STATE                                                           */
+  /* ---------------------------------------------------------------------- */
+
   const notificationLabel =
     unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications";
+
+  const displayName = userName || "Workspace owner";
 
   const initials = getInitials(userName);
 
@@ -437,9 +475,17 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
   const showMobileSearchResults =
     isMobileSearchOpen && trimmedQuery.length >= 2;
 
+  /* ---------------------------------------------------------------------- */
+  /* RENDER                                                                  */
+  /* ---------------------------------------------------------------------- */
+
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-white/90 backdrop-blur-xl">
       <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:min-h-18 sm:px-6 lg:px-10">
+        {/* ---------------------------------------------------------------- */}
+        {/* LEFT                                                               */}
+        {/* ---------------------------------------------------------------- */}
+
         <div className="flex min-w-0 items-center gap-2">
           <button
             type="button"
@@ -463,6 +509,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
             </span>
           </Link>
 
+          {/* -------------------------------------------------------------- */}
+          {/* DESKTOP SEARCH                                                  */}
+          {/* -------------------------------------------------------------- */}
+
           <div
             ref={searchRef}
             className="relative hidden w-full max-w-md md:block"
@@ -474,6 +524,7 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
               value={searchQuery}
               onChange={(event) => {
                 setSearchQuery(event.target.value);
+
                 setIsSearchOpen(true);
               }}
               onFocus={handleSearchFocus}
@@ -510,7 +561,15 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
           </div>
         </div>
 
+        {/* ---------------------------------------------------------------- */}
+        {/* RIGHT                                                              */}
+        {/* ---------------------------------------------------------------- */}
+
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+          {/* -------------------------------------------------------------- */}
+          {/* MOBILE SEARCH                                                   */}
+          {/* -------------------------------------------------------------- */}
+
           <button
             type="button"
             onClick={() => {
@@ -521,6 +580,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
           >
             <Search className="h-4.5 w-4.5" />
           </button>
+
+          {/* -------------------------------------------------------------- */}
+          {/* NOTIFICATIONS                                                   */}
+          {/* -------------------------------------------------------------- */}
 
           <button
             type="button"
@@ -540,6 +603,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
             )}
           </button>
 
+          {/* -------------------------------------------------------------- */}
+          {/* PROFILE                                                         */}
+          {/* -------------------------------------------------------------- */}
+
           <div ref={profileRef} className="relative">
             <button
               type="button"
@@ -552,12 +619,14 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
                 {showAvatar ? (
                   <Image
                     src={avatarUrl as string}
-                    alt={`${userName} profile`}
+                    alt={`${displayName} profile`}
                     fill
                     sizes="36px"
                     className="object-cover"
                     onError={() => setAvatarError(true)}
                   />
+                ) : isAccountLoading ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
                 ) : (
                   <span>{initials}</span>
                 )}
@@ -565,7 +634,7 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
 
               <div className="hidden text-left sm:block">
                 <p className="max-w-32 truncate text-sm font-semibold text-foreground">
-                  {userName}
+                  {isAccountLoading ? "Loading..." : displayName}
                 </p>
 
                 <p className="text-xs text-muted">Owner</p>
@@ -590,12 +659,14 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
                       {showAvatar ? (
                         <Image
                           src={avatarUrl as string}
-                          alt={`${userName} profile`}
+                          alt={`${displayName} profile`}
                           fill
                           sizes="40px"
                           className="object-cover"
                           onError={() => setAvatarError(true)}
                         />
+                      ) : isAccountLoading ? (
+                        <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
                       ) : (
                         <span>{initials}</span>
                       )}
@@ -603,7 +674,7 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
 
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-foreground">
-                        {userName}
+                        {isAccountLoading ? "Loading..." : displayName}
                       </p>
 
                       <p className="mt-0.5 text-xs text-muted">Owner</p>
@@ -657,6 +728,10 @@ export default function DashboardHeader({ onMenuOpen }: DashboardHeaderProps) {
           </div>
         </div>
       </div>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* MOBILE SEARCH PANEL                                                */}
+      {/* ------------------------------------------------------------------ */}
 
       {isMobileSearchOpen && (
         <div className="absolute inset-x-0 top-full border-b border-border/70 bg-white/95 px-4 py-3 shadow-lg backdrop-blur-xl md:hidden">

@@ -49,6 +49,7 @@
 html {
   min-height: 100%;
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -80,4 +81,17 @@ a {
 ::selection {
   background: var(--primary-soft);
   color: var(--primary-dark);
+}
+
+
+
+
+@keyframes dashboard-progress {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(420%);
+  }
 }

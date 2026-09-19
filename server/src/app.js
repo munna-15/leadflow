@@ -16,6 +16,10 @@ import settingsRoutes from "./routes/settings.routes.js";
 import avatarRoutes from "./routes/avatar.routes.js";
 import teamRoutes from "./routes/team.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
+import platformRoutes from "./routes/platform.routes.js";
+
+
+
 
 import errorHandler from "./middleware/error.middleware.js";
 
@@ -51,7 +55,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/auth/avatar", avatarRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/notifications", notificationRoutes);
-
+app.use("/api/platform", platformRoutes);
 
 
 app.use(errorHandler);

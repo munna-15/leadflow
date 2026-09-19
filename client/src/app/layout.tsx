@@ -20,13 +20,18 @@ export const metadata: Metadata = {
     default: "LeadFlow",
     template: "%s | LeadFlow",
   },
+
   description:
     "AI-powered lead management and follow-up system for modern businesses.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      data-scroll-behavior="smooth"
+    >
       <body
         className="min-h-screen bg-[#F7F8FA] text-[#111827] antialiased"
         suppressHydrationWarning
