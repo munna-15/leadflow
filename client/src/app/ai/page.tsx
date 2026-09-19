@@ -30,7 +30,6 @@ import SiteNavbar from "@/components/layout/SiteNavbar";
 import SiteFooter from "@/components/home/SiteFooter";
 
 const typingSpeed = 24;
-
 const ease = [0.22, 1, 0.36, 1] as const;
 
 type ChatPhase = "customer" | "thinking" | "response" | "details" | "complete";
@@ -96,9 +95,11 @@ const conversations: Conversation[] = [
 
 function TypingText({
   text,
+  active,
   onComplete,
 }: {
   text: string;
+  active: boolean;
   onComplete?: () => void;
 }) {
   const [visibleText, setVisibleText] = useState("");
@@ -110,35 +111,49 @@ function TypingText({
   }, [onComplete]);
 
   useEffect(() => {
-    let index = 0;
-    let completed = false;
-
-    setVisibleText("");
+    if (!active) {
+      return;
+    }
 
     if (!text) {
+      setVisibleText("");
       onCompleteRef.current?.();
       return;
     }
 
-    const interval = window.setInterval(() => {
+    let index = 0;
+    let timer: number | null = null;
+    let cancelled = false;
+
+    setVisibleText("");
+
+    const typeNextCharacter = () => {
+      if (cancelled) {
+        return;
+      }
+
       index += 1;
 
       setVisibleText(text.slice(0, index));
 
       if (index >= text.length) {
-        window.clearInterval(interval);
-
-        if (!completed) {
-          completed = true;
-          onCompleteRef.current?.();
-        }
+        onCompleteRef.current?.();
+        return;
       }
-    }, typingSpeed);
+
+      timer = window.setTimeout(typeNextCharacter, typingSpeed);
+    };
+
+    timer = window.setTimeout(typeNextCharacter, typingSpeed);
 
     return () => {
-      window.clearInterval(interval);
+      cancelled = true;
+
+      if (timer !== null) {
+        window.clearTimeout(timer);
+      }
     };
-  }, [text]);
+  }, [text, active]);
 
   return <>{visibleText}</>;
 }
@@ -149,7 +164,7 @@ function ChatTypingIndicator() {
       {[0, 120, 240].map((delay) => (
         <span
           key={delay}
-          className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"
+          className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-500"
           style={{
             animationDelay: `${delay}ms`,
           }}
@@ -171,7 +186,7 @@ function ChatSignal({
   return (
     <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border/60 py-2.5 last:border-b-0">
       <div className="flex min-w-0 items-center gap-2">
-        <Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+        <Icon className="h-3.5 w-3.5 shrink-0 text-sky-600" />
 
         <span className="truncate text-[11px] font-medium text-muted">
           {label}
@@ -185,9 +200,9 @@ function ChatSignal({
   );
 }
 
+
 function AIChatPreview() {
   const [conversationIndex, setConversationIndex] = useState(0);
-
   const [phase, setPhase] = useState<ChatPhase>("customer");
 
   const conversation = conversations[conversationIndex];
@@ -246,16 +261,22 @@ function AIChatPreview() {
     };
   }, [phase]);
 
-  const replyVisible =
-    phase === "response" || phase === "details" || phase === "complete";
+  const thinkingVisible = phase === "thinking";
 
-  const detailsVisible = phase === "details" || phase === "complete";
+  const responseVisible =
+    phase === "response" ||
+    phase === "details" ||
+    phase === "complete";
+
+  const detailsVisible =
+    phase === "details" ||
+    phase === "complete";
 
   return (
-    <div className="relative mx-auto w-full max-w-[560px]">
+    <div className="relative mx-auto h-[46rem] max-h-[46rem] w-full max-w-[560px]">
       <div
         aria-hidden="true"
-        className="absolute -inset-10 -z-10 rounded-[3rem] bg-primary/[0.055] blur-3xl"
+        className="absolute -inset-10 -z-10 rounded-[3rem] bg-sky-500/[0.055] blur-3xl"
       />
 
       <motion.div
@@ -271,14 +292,14 @@ function AIChatPreview() {
           duration: 0.7,
           ease,
         }}
-        className="overflow-hidden rounded-[1.9rem] border border-border bg-white shadow-[0_30px_90px_-42px_rgba(15,23,42,0.3)]"
+        className="flex h-full flex-col overflow-hidden rounded-[1.9rem] border border-border bg-white shadow-[0_30px_90px_-42px_rgba(15,23,42,0.3)]"
       >
         {/* Header */}
-        <div className="border-b border-border/80 bg-white px-4 py-4 sm:px-5">
+        <div className="shrink-0 border-b border-border/80 bg-white px-4 py-4 sm:px-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                <BrainCircuit className="h-4.5 w-4.5" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600">
+                <BrainCircuit className="h-4 w-4" />
               </div>
 
               <div className="min-w-0">
@@ -287,7 +308,7 @@ function AIChatPreview() {
                     LeadFlow AI
                   </p>
 
-                  <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-primary">
+                  <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.1em] text-sky-600">
                     Live preview
                   </span>
                 </div>
@@ -299,7 +320,7 @@ function AIChatPreview() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5">
-              <span className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_10px_rgba(16,185,129,0.45)]" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.45)]" />
 
               <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Active
@@ -308,245 +329,295 @@ function AIChatPreview() {
           </div>
         </div>
 
-        {/* Chat body */}
-        <div className="min-h-[34rem] bg-gradient-to-b from-white via-white to-slate-50/90 px-3.5 py-4 sm:px-5 sm:py-5">
-          <div className="flex min-h-[30rem] flex-col">
-            <div className="mb-4 flex items-center justify-center">
+        {/* Conversation stage */}
+        <div className="min-h-0 flex-1 overflow-hidden bg-gradient-to-b from-white via-white to-slate-50/90 px-4 py-4 sm:px-5 sm:py-5">
+          <div className="flex h-full min-h-0 flex-col">
+            {/* Workflow label */}
+            <div className="flex shrink-0 justify-center">
               <span className="rounded-full border border-border/70 bg-white px-3 py-1.5 text-[8px] font-bold uppercase tracking-[0.14em] text-muted shadow-sm">
                 Example workflow
               </span>
             </div>
 
-            {/* Customer message */}
-            <motion.div
-              key={`customer-${conversationIndex}`}
-              initial={{
-                opacity: 0,
-                y: 10,
-              }}
-              animate={{
-                opacity: 1,
-                y: 0,
-              }}
-              transition={{
-                duration: 0.4,
-                ease,
-              }}
-              className="ml-auto w-full max-w-[94%] sm:max-w-[86%]"
-            >
-              <div className="flex items-start justify-end gap-2.5">
-                <div className="min-w-0 rounded-[1.25rem] rounded-tr-md bg-[#111827] px-3.5 py-3 text-[12px] leading-5 text-white shadow-[0_12px_30px_-18px_rgba(15,23,42,0.55)] sm:px-4 sm:py-3.5 sm:text-[13px] sm:leading-5">
-                  <TypingText
-                    text={conversation.customer}
-                    onComplete={handleCustomerComplete}
-                  />
-                </div>
-
-                <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-muted">
-                  <Users className="h-3.5 w-3.5" />
-                </div>
-              </div>
-
-              <div className="mt-1.5 text-right text-[9px] font-medium text-muted">
-                Customer
-              </div>
-            </motion.div>
-
-            {/* Thinking */}
-            {phase === "thinking" && (
+            {/* Conversation */}
+            <div className="mt-5 min-h-0 flex-1">
+              {/* Customer message */}
               <motion.div
+                key={`customer-${conversationIndex}`}
                 initial={{
                   opacity: 0,
-                  y: 6,
+                  y: 8,
                 }}
                 animate={{
                   opacity: 1,
                   y: 0,
                 }}
                 transition={{
-                  duration: 0.3,
-                }}
-                className="mt-5 flex items-start gap-2.5"
-              >
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary">
-                  <Sparkles className="h-3.5 w-3.5" />
-                </div>
-
-                <div className="rounded-[1.2rem] rounded-tl-md border border-border bg-white px-3.5 py-2.5 shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <ChatTypingIndicator />
-
-                    <span className="text-[10px] font-medium text-muted">
-                      Understanding context…
-                    </span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {/* AI reply */}
-            {replyVisible && (
-              <motion.div
-                key={`assistant-${conversationIndex}`}
-                initial={{
-                  opacity: 0,
-                  y: 10,
-                }}
-                animate={{
-                  opacity: 1,
-                  y: 0,
-                }}
-                transition={{
-                  duration: 0.4,
+                  duration: 0.35,
                   ease,
                 }}
-                className="mt-5"
               >
-                <div className="flex items-start gap-2.5">
-                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-sm">
-                    <BrainCircuit className="h-3.5 w-3.5" />
-                  </div>
+                <div className="flex items-start justify-end gap-2.5">
+                  <div
+                    className="
+                      w-fit
+                      max-w-[88%]
+                      rounded-[1.25rem]
+                      rounded-tr-md
+                      bg-[#111827]
+                      px-3.5
+                      py-3
+                      text-[12px]
+                      leading-5
+                      text-white
+                      shadow-[0_12px_30px_-18px_rgba(15,23,42,0.55)]
+                      sm:max-w-[84%]
+                      sm:px-4
+                      sm:py-3.5
+                      sm:text-[13px]
+                    "
+                  >
+                    <TypingText
+                      key={`customer-typing-${conversationIndex}`}
+                      text={conversation.customer}
+                      active={phase === "customer"}
+                      onComplete={handleCustomerComplete}
+                    />
 
-                  <div className="min-w-0 flex-1">
-                    <div className="min-h-[7rem] rounded-[1.2rem] rounded-tl-md border border-primary/15 bg-primary-soft/45 px-3.5 py-3.5 shadow-sm sm:px-4">
-                      <p className="text-[12px] leading-5 text-foreground sm:text-[13px] sm:leading-5">
-                        <TypingText
-                          text={conversation.response}
-                          onComplete={handleResponseComplete}
-                        />
-
-                        {phase === "response" && (
-                          <span className="ml-0.5 inline-block h-3.5 w-px translate-y-[2px] animate-pulse bg-primary" />
-                        )}
-                      </p>
-                    </div>
-
-                    <div className="mt-1.5 text-[9px] font-medium text-muted">
-                      LeadFlow AI
-                    </div>
-
-                    {/* Intelligence */}
-                    {detailsVisible && (
-                      <motion.div
-                        initial={{
-                          opacity: 0,
-                          y: 8,
-                        }}
-                        animate={{
-                          opacity: 1,
-                          y: 0,
-                        }}
-                        transition={{
-                          duration: 0.45,
-                          ease,
-                        }}
-                        className="mt-3 rounded-[1.2rem] border border-border bg-white shadow-sm"
-                      >
-                        <div className="flex items-center justify-between gap-3 border-b border-border/70 bg-slate-50/80 px-3.5 py-2.5 sm:px-4">
-                          <div className="flex items-center gap-2">
-                            <Sparkles className="h-3.5 w-3.5 text-primary" />
-
-                            <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-foreground">
-                              Lead intelligence
-                            </p>
-                          </div>
-
-                          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-primary">
-                            AI enriched
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2.5 p-3.5 sm:p-4">
-                          <div className="rounded-xl border border-border/70 bg-background/60 p-3">
-                            <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted">
-                              Intent
-                            </p>
-
-                            <p className="mt-1 text-[11px] font-semibold leading-4 text-foreground">
-                              {conversation.intent}
-                            </p>
-                          </div>
-
-                          <div className="rounded-xl border border-border/70 bg-background/60 p-3">
-                            <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted">
-                              Score
-                            </p>
-
-                            <div className="mt-1 flex items-center gap-1.5">
-                              <p className="text-base font-semibold text-foreground">
-                                {conversation.score}
-                              </p>
-
-                              <span
-                                className={`text-[8px] font-bold uppercase tracking-[0.08em] ${
-                                  conversation.temperature === "Hot"
-                                    ? "text-danger"
-                                    : "text-warning"
-                                }`}
-                              >
-                                {conversation.temperature}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="px-3.5 sm:px-4">
-                          <ChatSignal
-                            icon={Layers3}
-                            label="Pipeline stage"
-                            value={conversation.stage}
-                          />
-
-                          <ChatSignal
-                            icon={Zap}
-                            label="Next action"
-                            value="Suggested"
-                          />
-                        </div>
-
-                        <div className="mx-3.5 my-3 rounded-xl border border-primary/10 bg-primary-soft/30 p-3 sm:mx-4">
-                          <div className="flex items-start gap-2.5">
-                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-primary">
-                              <Lightbulb className="h-3.5 w-3.5" />
-                            </div>
-
-                            <div className="min-w-0">
-                              <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-primary">
-                                Recommended next move
-                              </p>
-
-                              <p className="mt-1 text-[10px] leading-4 text-foreground">
-                                {conversation.nextAction}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="border-t border-border/70 px-3.5 py-3 sm:px-4">
-                          <div className="flex flex-wrap gap-1.5">
-                            {conversation.signals.map((signal) => (
-                              <span
-                                key={signal}
-                                className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/60 px-2 py-1 text-[8px] font-medium text-muted"
-                              >
-                                <CheckCircle2 className="h-2.5 w-2.5 shrink-0 text-success" />
-
-                                {signal}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
+                    {phase === "customer" && (
+                      <span className="ml-0.5 inline-block h-3.5 w-px translate-y-[2px] animate-pulse bg-sky-400" />
                     )}
                   </div>
+
+                  <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                    <Users className="h-3.5 w-3.5" />
+                  </div>
+                </div>
+
+                <div className="mt-1 text-right text-[9px] font-medium text-muted">
+                  Customer
                 </div>
               </motion.div>
-            )}
 
-            {/* Bottom status */}
-            <div className="mt-auto pt-5">
-              <div className="flex items-center justify-center gap-2 border-t border-border/70 pt-4">
-                <ShieldCheck className="h-3 w-3 shrink-0 text-primary" />
+              {/* AI block */}
+              <div className="mt-1">
+                {/* Thinking state */}
+                <motion.div
+                  animate={{
+                    opacity: thinkingVisible ? 1 : 0,
+                    height: thinkingVisible ? "auto" : 0,
+                    marginBottom: thinkingVisible ? 4 : 0,
+                  }}
+                  transition={{
+                    duration: 0.25,
+                  }}
+                  className="overflow-hidden"
+                >
+                  {thinkingVisible && (
+                    <div className="flex items-start gap-2.5">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600">
+                        <Sparkles className="h-3.5 w-3.5" />
+                      </div>
+
+                      <div className="w-fit rounded-[1.2rem] rounded-tl-md border border-border bg-white px-3.5 py-2.5 shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <ChatTypingIndicator />
+
+                          <span className="text-[10px] font-medium text-muted">
+                            Understanding context…
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+
+                {/* AI response */}
+                <motion.div
+                  key={`response-${conversationIndex}`}
+                  initial={{
+                    opacity: 0,
+                    y: 8,
+                  }}
+                  animate={{
+                    opacity: responseVisible ? 1 : 0,
+                    y: responseVisible ? 0 : 6,
+                  }}
+                  transition={{
+                    duration: 0.35,
+                    ease,
+                  }}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-sky-600 text-white shadow-sm">
+                      <BrainCircuit className="h-3.5 w-3.5" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div
+                        className="
+                          inline-block
+                          max-w-full
+                          rounded-[1.2rem]
+                          rounded-tl-md
+                          border
+                          border-sky-100
+                          bg-sky-50/80
+                          px-3.5
+                          py-3.5
+                          shadow-sm
+                          sm:px-4
+                        "
+                      >
+                        <p className="break-words text-[12px] leading-5 text-foreground sm:text-[13px] sm:leading-5">
+                          <TypingText
+                            key={`response-typing-${conversationIndex}`}
+                            text={conversation.response}
+                            active={phase === "response"}
+                            onComplete={handleResponseComplete}
+                          />
+
+                          {phase === "response" && (
+                            <span className="ml-0.5 inline-block h-3.5 w-px translate-y-[2px] animate-pulse bg-sky-500" />
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="mt-1 text-[9px] font-medium text-muted">
+                        LeadFlow AI
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* AI intelligence */}
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 6,
+                  }}
+                  animate={{
+                    opacity: detailsVisible ? 1 : 0,
+                    y: detailsVisible ? 0 : 6,
+                  }}
+                  transition={{
+                    duration: 0.35,
+                    ease,
+                  }}
+                  className={
+                    detailsVisible
+                      ? "mt-1"
+                      : "pointer-events-none h-0 overflow-hidden"
+                  }
+                >
+                  <div className="overflow-hidden rounded-[1.2rem] border border-border bg-white shadow-sm">
+                    {/* Intelligence header */}
+                    <div className="flex h-10 items-center justify-between gap-3 border-b border-border/70 bg-slate-50/80 px-3.5 sm:px-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5 text-sky-600" />
+
+                        <p className="text-[9px] font-bold uppercase tracking-[0.1em] text-foreground">
+                          Lead intelligence
+                        </p>
+                      </div>
+
+                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.08em] text-sky-600">
+                        AI enriched
+                      </span>
+                    </div>
+
+                    {/* Intent + score */}
+                    <div className="grid grid-cols-2 gap-2 px-3 pt-3 sm:px-3.5">
+                      <div className="rounded-xl border border-border/70 bg-background/60 p-2.5">
+                        <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted">
+                          Intent
+                        </p>
+
+                        <p className="mt-1 text-[11px] font-semibold leading-4 text-foreground">
+                          {conversation.intent}
+                        </p>
+                      </div>
+
+                      <div className="rounded-xl border border-border/70 bg-background/60 p-2.5">
+                        <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted">
+                          Score
+                        </p>
+
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <p className="text-base font-semibold text-foreground">
+                            {conversation.score}
+                          </p>
+
+                          <span
+                            className={`text-[8px] font-bold uppercase tracking-[0.08em] ${
+                              conversation.temperature === "Hot"
+                                ? "text-rose-600"
+                                : "text-amber-600"
+                            }`}
+                          >
+                            {conversation.temperature}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Pipeline + action */}
+                    <div className="px-3 sm:px-4">
+                      <ChatSignal
+                        icon={Layers3}
+                        label="Pipeline stage"
+                        value={conversation.stage}
+                      />
+
+                      <ChatSignal
+                        icon={Zap}
+                        label="Next action"
+                        value="Suggested"
+                      />
+                    </div>
+
+                    {/* Recommended move */}
+                    <div className="mx-3 my-2 rounded-xl border border-sky-100 bg-sky-50/70 p-2.5 sm:mx-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white text-sky-600">
+                          <Lightbulb className="h-3.5 w-3.5" />
+                        </div>
+
+                        <div className="min-w-0">
+                          <p className="text-[8px] font-bold uppercase tracking-[0.1em] text-sky-600">
+                            Recommended next move
+                          </p>
+
+                          <p className="mt-1 text-[10px] leading-4 text-foreground">
+                            {conversation.nextAction}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Signals */}
+                    <div className="border-t border-border/70 px-3 py-2 sm:px-4">
+                      <div className="flex flex-wrap gap-1.5">
+                        {conversation.signals.map((signal) => (
+                          <span
+                            key={signal}
+                            className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/60 px-2 py-1 text-[8px] font-medium text-muted"
+                          >
+                            <CheckCircle2 className="h-2.5 w-2.5 shrink-0 text-sky-500" />
+                            {signal}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
+            {/* Human control */}
+            <div className="shrink-0 border-t border-border/70 pt-3">
+              <div className="flex items-center justify-center gap-2">
+                <ShieldCheck className="h-3 w-3 shrink-0 text-sky-600" />
 
                 <p className="text-center text-[8px] leading-4 text-muted">
                   AI surfaces signals and recommendations. Your team stays in
@@ -558,10 +629,10 @@ function AIChatPreview() {
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border/80 bg-slate-50/70 px-4 py-3.5 sm:px-5">
+        <div className="shrink-0 border-t border-border/80 bg-slate-50/70 px-4 py-3.5 sm:px-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2">
-              <CircleDot className="h-3 w-3 shrink-0 text-primary" />
+              <CircleDot className="h-3 w-3 shrink-0 text-sky-600" />
 
               <p className="truncate text-[8px] font-semibold uppercase tracking-[0.12em] text-muted sm:text-[9px]">
                 Capture · Understand · Prioritize · Act
@@ -569,7 +640,7 @@ function AIChatPreview() {
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 text-[8px] font-medium text-muted sm:text-[9px]">
-              <Clock3 className="h-3 w-3" />
+              <Clock3 className="h-3 w-3 text-sky-600" />
               Real-time workflow
             </div>
           </div>
@@ -578,6 +649,9 @@ function AIChatPreview() {
     </div>
   );
 }
+
+
+
 
 const workflowSteps = [
   {
