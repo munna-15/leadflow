@@ -1,7 +1,5 @@
 import express from "express";
-
 import cors from "cors";
-
 import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes.js";
@@ -18,10 +16,6 @@ import teamRoutes from "./routes/team.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import platformRoutes from "./routes/platform.routes.js";
 import getStartedRoutes from "./routes/getStarted.routes.js";
-
-
-
-
 
 import errorHandler from "./middleware/error.middleware.js";
 
@@ -45,22 +39,43 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+/* -------------------------------------------------------------------------- */
+/* AUTHENTICATION                                                             */
+/* -------------------------------------------------------------------------- */
+
 app.use("/api/auth", authRoutes);
+
+/* -------------------------------------------------------------------------- */
+/* PUBLIC ROUTES                                                              */
+/* -------------------------------------------------------------------------- */
+
+app.use("/api/get-started", getStartedRoutes);
+
+/* -------------------------------------------------------------------------- */
+/* PROTECTED PLATFORM ROUTES                                                  */
+/* -------------------------------------------------------------------------- */
+
 app.use("/api/leads", leadRoutes);
 app.use("/api/pipeline", pipelineRoutes);
 app.use("/api/follow-ups", followUpRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/analytics", analyticsRoutes);
-app.use("/api", aiNextActionRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/auth/avatar", avatarRoutes);
 app.use("/api/team", teamRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/platform", platformRoutes);
-app.use("/api/get-started", getStartedRoutes);
 
+/* -------------------------------------------------------------------------- */
+/* AI ROUTES                                                                  */
+/* -------------------------------------------------------------------------- */
 
+app.use("/api", aiNextActionRoutes);
+
+/* -------------------------------------------------------------------------- */
+/* ERROR HANDLER                                                              */
+/* -------------------------------------------------------------------------- */
 
 app.use(errorHandler);
 
