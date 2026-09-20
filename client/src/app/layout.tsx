@@ -20,9 +20,12 @@ export const metadata: Metadata = {
     default: "LeadFlow",
     template: "%s | LeadFlow",
   },
-
   description:
     "AI-powered lead management and follow-up system for modern businesses.",
+  icons: {
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
