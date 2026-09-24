@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import {
   Archive,
-  ArrowUpRight,
   Building2,
   Check,
   CheckCircle2,
@@ -79,6 +77,10 @@ const initialForm: FormState = {
   website: "",
   location: "",
 };
+
+const CLIENT_REFRESH_ATTEMPTS = 3;
+
+const CLIENT_REFRESH_DELAY = 700;
 
 /* -------------------------------------------------------------------------- */
 /* HELPERS                                                                    */
@@ -185,6 +187,11 @@ const statusClasses: Record<InvitationState, string> = {
   neutral: "bg-slate-100 text-slate-600 ring-slate-500/10",
 };
 
+const wait = (milliseconds: number) =>
+  new Promise<void>((resolve) => {
+    window.setTimeout(resolve, milliseconds);
+  });
+
 /* -------------------------------------------------------------------------- */
 /* PAGE                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -211,6 +218,14 @@ export default function PlatformClientsPage() {
   const [latestInviteUrl, setLatestInviteUrl] = useState<string | null>(null);
 
   const [copiedInvite, setCopiedInvite] = useState(false);
+
+  const [copiedWorkspaceId, setCopiedWorkspaceId] = useState<string | null>(
+    null,
+  );
+
+  const [createdWorkspaceId, setCreatedWorkspaceId] = useState<string | null>(
+    null,
+  );
 
   const [editingClient, setEditingClient] = useState<ClientWorkspace | null>(
     null,
@@ -301,6 +316,8 @@ export default function PlatformClientsPage() {
       const data = await getClientWorkspaces();
 
       setClients(data);
+
+      return data;
     } catch (error) {
       const message =
         error instanceof Error
@@ -308,6 +325,8 @@ export default function PlatformClientsPage() {
           : "Unable to load client workspaces.";
 
       toast.error(message);
+
+      return null;
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -317,6 +336,33 @@ export default function PlatformClientsPage() {
   useEffect(() => {
     void loadClients();
   }, [loadClients]);
+
+  /* ------------------------------------------------------------------------ */
+  /* VERIFY CREATED WORKSPACE                                                 */
+  /* ------------------------------------------------------------------------ */
+
+  const refreshUntilWorkspaceExists = useCallback(
+    async (businessId: string) => {
+      for (let attempt = 0; attempt < CLIENT_REFRESH_ATTEMPTS; attempt += 1) {
+        const data = await getClientWorkspaces();
+
+        setClients(data);
+
+        const workspaceExists = data.some((client) => client.id === businessId);
+
+        if (workspaceExists) {
+          return true;
+        }
+
+        if (attempt < CLIENT_REFRESH_ATTEMPTS - 1) {
+          await wait(CLIENT_REFRESH_DELAY);
+        }
+      }
+
+      return false;
+    },
+    [],
+  );
 
   /* ------------------------------------------------------------------------ */
   /* SEARCH                                                                   */
@@ -331,6 +377,7 @@ export default function PlatformClientsPage() {
 
     return clients.filter((client) => {
       const values = [
+        client.id,
         client.name,
         client.industry,
         client.location,
@@ -384,15 +431,27 @@ export default function PlatformClientsPage() {
 
       const result = await createClientWorkspace(payload);
 
-      setForm(initialForm);
+      const businessId = result.business.id;
 
-      await loadClients(true);
+      setCreatedWorkspaceId(businessId);
+
+      setForm(initialForm);
+      setIsCreateOpen(false);
+      setActionMenu(null);
 
       setLatestInviteUrl(result.invitation.devInviteUrl || null);
 
-      setIsCreateOpen(false);
+      setIsRefreshing(true);
 
-      if (result.invitation.emailSent) {
+      const workspaceVisible = await refreshUntilWorkspaceExists(businessId);
+
+      setIsRefreshing(false);
+
+      if (!workspaceVisible) {
+        toast.warning(
+          "Workspace was created, but the directory is still syncing. Use Refresh to update it.",
+        );
+      } else if (result.invitation.emailSent) {
         toast.success("Client workspace created and invitation sent.");
       } else {
         toast.warning(
@@ -408,6 +467,7 @@ export default function PlatformClientsPage() {
       toast.error(message);
     } finally {
       setIsCreating(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -515,6 +575,10 @@ export default function PlatformClientsPage() {
         current.filter((client) => client.id !== archivingClient.id),
       );
 
+      if (createdWorkspaceId === archivingClient.id) {
+        setCreatedWorkspaceId(null);
+      }
+
       setArchivingClient(null);
 
       toast.success("Client workspace archived and access revoked.");
@@ -561,6 +625,26 @@ export default function PlatformClientsPage() {
       }, 1800);
     } catch {
       toast.error("Unable to copy the invitation link.");
+    }
+  };
+
+  /* ------------------------------------------------------------------------ */
+  /* COPY WORKSPACE ID                                                        */
+  /* ------------------------------------------------------------------------ */
+
+  const handleCopyWorkspaceId = async (workspaceId: string) => {
+    try {
+      await navigator.clipboard.writeText(workspaceId);
+
+      setCopiedWorkspaceId(workspaceId);
+
+      window.setTimeout(() => {
+        setCopiedWorkspaceId((current) =>
+          current === workspaceId ? null : current,
+        );
+      }, 1800);
+    } catch {
+      toast.error("Unable to copy workspace ID.");
     }
   };
 
@@ -632,7 +716,8 @@ export default function PlatformClientsPage() {
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen((current) => !current)}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] transition-all duration-200 hover:bg-[#1F2937] hover:shadow-[0_16px_36px_rgba(15,23,42,0.18)]"
+                  disabled={isCreating}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#111827] px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(15,23,42,0.14)] transition-all duration-200 hover:bg-[#1F2937] hover:shadow-[0_16px_36px_rgba(15,23,42,0.18)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isCreateOpen ? (
                     <>
@@ -924,8 +1009,8 @@ export default function PlatformClientsPage() {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search client, owner or location"
-                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-white pl-10 pr-10 text-sm text-[#111827] outline-none transition-all duration-200 placeholder:text-[#A1A1AA] hover:border-[#CBD5E1] focus:border-[#7DD3FC] focus:ring-4 focus:ring-[#E0F2FE] sm:w-[330px]"
+                  placeholder="Search client, owner, ID or location"
+                  className="h-11 w-full rounded-xl border border-[#E5E7EB] bg-white pl-10 pr-10 text-sm text-[#111827] outline-none transition-all duration-200 placeholder:text-[#A1A1AA] hover:border-[#CBD5E1] focus:border-[#7DD3FC] focus:ring-4 focus:ring-[#E0F2FE] sm:w-[350px]"
                 />
 
                 {search && (
@@ -1011,10 +1096,32 @@ export default function PlatformClientsPage() {
 
                     const isMenuOpen = actionMenu === client.id;
 
+                    const isRecentlyCreated = createdWorkspaceId === client.id;
+
                     return (
-                      <div
+                      <motion.div
                         key={client.id}
-                        className="group relative px-5 py-5 transition-colors duration-200 hover:bg-[#FCFDFE] sm:px-6 lg:px-8"
+                        initial={
+                          isRecentlyCreated
+                            ? {
+                                opacity: 0,
+                                y: 8,
+                              }
+                            : false
+                        }
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        transition={{
+                          duration: 0.25,
+                          ease: [0.22, 1, 0.36, 1],
+                        }}
+                        className={`group relative px-5 py-5 transition-colors duration-200 sm:px-6 lg:px-8 ${
+                          isRecentlyCreated
+                            ? "bg-sky-50/45 hover:bg-sky-50/65"
+                            : "hover:bg-[#FCFDFE]"
+                        }`}
                       >
                         <div className="grid gap-5 md:grid-cols-[minmax(260px,1.5fr)_minmax(210px,1.1fr)_minmax(120px,.8fr)_minmax(170px,1fr)_80px] md:items-center md:gap-5">
                           {/* Workspace */}
@@ -1035,6 +1142,28 @@ export default function PlatformClientsPage() {
                                   </h3>
 
                                   <ChevronRight className="hidden h-3.5 w-3.5 text-[#CBD5E1] sm:block" />
+                                </div>
+
+                                <div className="mt-1 flex min-w-0 items-center gap-2">
+                                  <span className="truncate font-mono text-[10px] font-medium tracking-wide text-[#94A3B8]">
+                                    ID: {client.id}
+                                  </span>
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      void handleCopyWorkspaceId(client.id)
+                                    }
+                                    aria-label={`Copy workspace ID ${client.id}`}
+                                    title="Copy workspace ID"
+                                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[#94A3B8] transition-colors hover:bg-[#EEF2F7] hover:text-[#334155]"
+                                  >
+                                    {copiedWorkspaceId === client.id ? (
+                                      <Check className="h-3 w-3 text-emerald-600" />
+                                    ) : (
+                                      <Clipboard className="h-3 w-3" />
+                                    )}
+                                  </button>
                                 </div>
 
                                 <p className="mt-1 text-xs text-[#64748B]">
@@ -1061,6 +1190,13 @@ export default function PlatformClientsPage() {
                                     </a>
                                   )}
                                 </div>
+
+                                {isRecentlyCreated && (
+                                  <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-sky-100 px-2 py-1 text-[9px] font-semibold uppercase tracking-[0.1em] text-sky-700">
+                                    <CheckCircle2 className="h-3 w-3" />
+                                    Just created
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1183,7 +1319,7 @@ export default function PlatformClientsPage() {
                             </span>
                           )}
                         </div>
-                      </div>
+                      </motion.div>
                     );
                   })}
                 </div>
@@ -1339,6 +1475,7 @@ function WorkspaceActionMenu({
     const menuRect = menu.getBoundingClientRect();
 
     const viewportPadding = 12;
+
     const gap = 10;
 
     const spaceAbove = triggerRect.top - viewportPadding;
@@ -1682,7 +1819,6 @@ function EditClientModal({
               </div>
 
               <button
-                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 disabled={isUpdating}
@@ -2047,7 +2183,7 @@ function EmptyDirectory({
 
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#64748B]">
         {search
-          ? "Try another client, owner, business or location."
+          ? "Try another client, owner, business, workspace ID or location."
           : "Create your first client workspace to start onboarding."}
       </p>
 
