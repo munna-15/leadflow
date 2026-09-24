@@ -4,7 +4,6 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
-
 import { login } from "@/services/auth.service";
 
 type FormErrors = {
@@ -273,16 +272,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
-
-              <p className="mt-6 text-center text-sm text-muted">
-                Don&apos;t have an account?{" "}
-                <Link
-                  href="/auth/register"
-                  className="font-semibold text-primary transition-colors hover:text-primary-dark"
-                >
-                  Create one
-                </Link>
-              </p>
             </div>
 
             <p className="mt-6 text-center text-xs leading-5 text-muted">
